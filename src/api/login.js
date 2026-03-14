@@ -1,4 +1,4 @@
-import {postRequest, getRequest} from "@/utils/request"
+import {postRequest} from "@/utils/request"
 
 /**
  * 登录接口 - 支持账号密码和邮箱验证码两种方式

@@ -1,11 +1,8 @@
-import {getRequest, postRequest, putRequest, deleteRequest} from "@/utils/request"
+import {getRequest, postRequest, putRequest, deleteRequest} from '@/utils/request'
 
 /**
  * 新增角色
  * @param {Object} data 角色数据
- * @param {string} data.dataScope 数据范围(1-全部数据权限,2-自定数据权限,3-本部门数据权限,4-本部门及以下数据权限,5-仅本人数据权限)
- * @param {number} data.deptCheckStrictly 部门树选择项是否关联显示
- * @param {Array} data.deptIds 部门组(数据权限)
  * @param {number} data.id 主键ID
  * @param {number} data.orderNum 显示顺序
  * @param {number} data.pageNum 页数
@@ -92,9 +89,6 @@ export function deleteRole(id) {
 /**
  * 角色分页列表
  * @param {Object} params 查询参数
- * @param {string} params.dataScope 数据范围(1-全部数据权限,2-自定数据权限,3-本部门数据权限,4-本部门及以下数据权限,5-仅本人数据权限)
- * @param {number} params.deptCheckStrictly 部门树选择项是否关联显示
- * @param {Array} params.deptIds 部门组(数据权限)
  * @param {number} params.id 主键ID
  * @param {number} params.orderNum 显示顺序
  * @param {number} params.pageNum 页数
@@ -108,14 +102,6 @@ export function deleteRole(id) {
  */
 export function getRolePageList(params) {
   return getRequest('/role/pageList', params)
-}
-
-/**
- * 获取对应角色部门树
- * @param {number} roleId 角色ID
- */
-export function getRoleWithDeptTree(roleId) {
-  return getRequest(`/role/roleWithDeptTree/${roleId}`)
 }
 
 /**
@@ -138,9 +124,6 @@ export function assignRolePermissions(roleId, permCodes) {
 /**
  * 修改角色
  * @param {Object} data 角色数据
- * @param {string} data.dataScope 数据范围(1-全部数据权限,2-自定数据权限,3-本部门数据权限,4-本部门及以下数据权限,5-仅本人数据权限)
- * @param {number} data.deptCheckStrictly 部门树选择项是否关联显示
- * @param {Array} data.deptIds 部门组(数据权限)
  * @param {number} data.id 主键ID
  * @param {number} data.orderNum 显示顺序
  * @param {number} data.pageNum 页数
@@ -154,27 +137,6 @@ export function assignRolePermissions(roleId, permCodes) {
  */
 export function updateRole(data) {
   return putRequest('/role/update', data)
-}
-
-/**
- * 修改角色数据权限
- * @param {Object} data 角色数据
- * @param {string} data.dataScope 数据范围(1-全部数据权限,2-自定数据权限,3-本部门数据权限,4-本部门及以下数据权限,5-仅本人数据权限)
- * @param {number} data.deptCheckStrictly 部门树选择项是否关联显示
- * @param {Array} data.deptIds 部门组(数据权限)
- * @param {number} data.id 主键ID
- * @param {number} data.orderNum 显示顺序
- * @param {number} data.pageNum 页数
- * @param {number} data.pageSize 当前页大小
- * @param {string} data.remark 备注
- * @param {string} data.roleCode 角色编码
- * @param {string} data.roleName 角色名称
- * @param {string} data.sortField 排序字段
- * @param {string} data.sortOrder 排序方式 ASC DESC
- * @param {string} data.status 角色状态(0-正常,1-停用)
- */
-export function updateRoleDataScope(data) {
-  return putRequest('/role/updateRoleDataScope', data)
 }
 
 /**

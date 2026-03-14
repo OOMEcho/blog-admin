@@ -37,11 +37,6 @@
         <el-table-column prop="roleName" label="角色名称" min-width="140"/>
         <el-table-column prop="roleCode" label="角色编码" min-width="120"/>
         <el-table-column prop="orderNum" label="排序" width="80"/>
-        <el-table-column label="数据范围" min-width="120">
-          <template slot-scope="scope">
-            {{ dataScopeText(scope.row.dataScope) }}
-          </template>
-        </el-table-column>
         <el-table-column label="状态" width="80">
           <template slot-scope="scope">
             <el-tag :type="statusTagType(scope.row.status)" size="mini">
@@ -81,7 +76,7 @@
                   @click="openPermDialog(scope.row)"/>
               </el-tooltip>
               <el-dropdown
-                v-perm="[PERMS.role.assignUser, PERMS.role.dataScope, PERMS.role.delete]"
+                v-perm="[PERMS.role.assignUser, PERMS.role.delete]"
                 trigger="click"
                 popper-class="action-dropdown">
                 <span class="action-dropdown-trigger">
@@ -92,9 +87,6 @@
                 <el-dropdown-menu slot="dropdown">
                   <el-dropdown-item v-perm="PERMS.role.assignUser" @click.native="openAssignUser(scope.row)">
                     分配用户
-                  </el-dropdown-item>
-                  <el-dropdown-item v-perm="PERMS.role.dataScope" @click.native="openDataScopeDialog(scope.row)">
-                    数据权限
                   </el-dropdown-item>
                   <el-dropdown-item v-perm="PERMS.role.delete" class="danger-item" @click.native="handleDelete(scope.row)">
                     <span class="danger-dot"></span>
@@ -244,47 +236,6 @@
       <div slot="footer" class="dialog-footer">
         <el-button @click="permDialogVisible = false">取消</el-button>
         <el-button type="primary" @click="saveRolePermissions">保存</el-button>
-      </div>
-    </el-dialog>
-
-    <el-dialog title="分配数据权限" :visible.sync="dataScopeDialogVisible" width="600px">
-      <el-form label-width="100px">
-        <el-form-item label="数据范围">
-          <el-select v-model="dataScopeForm.dataScope" placeholder="请选择">
-            <el-option label="全部数据权限" value="1"/>
-            <el-option label="自定数据权限" value="2"/>
-            <el-option label="本部门数据权限" value="3"/>
-            <el-option label="本部门及以下" value="4"/>
-            <el-option label="仅本人数据权限" value="5"/>
-          </el-select>
-        </el-form-item>
-        <el-form-item v-if="dataScopeForm.dataScope === '2'" label="数据权限">
-          <div class="data-scope-box">
-            <div class="data-scope-toolbar">
-              <el-checkbox v-model="dataScopeExpandAll" @change="handleExpandChange">展开/折叠</el-checkbox>
-              <el-checkbox
-                v-model="dataScopeCheckAll"
-                :indeterminate="dataScopeCheckHalf"
-                @change="handleCheckAllChange">
-                全选/全不选
-              </el-checkbox>
-              <el-checkbox v-model="parentChildLink">父子联动</el-checkbox>
-            </div>
-            <el-tree
-              ref="deptTree"
-              :data="deptTreeData"
-              node-key="id"
-              show-checkbox
-              :default-expand-all="dataScopeExpandAll"
-        :check-strictly="dataScopeForm.deptCheckStrictly !== 1"
-              :default-checked-keys="deptChecked"
-              @check-change="handleDeptCheckChange"/>
-          </div>
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="dataScopeDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveDataScope">保存</el-button>
       </div>
     </el-dialog>
 
@@ -458,9 +409,7 @@ import {
   getRolePageList,
   updateRole,
   updateRoleStatus,
-  getRoleWithDeptTree,
   getUnallocatedList,
-  updateRoleDataScope,
   getRolePermissions,
   assignRolePermissions,
   selectAuthAll
@@ -498,17 +447,6 @@ export default {
       permKeyword: '',
       permCollapseActive: ['M'],
       currentRoleId: null,
-      dataScopeDialogVisible: false,
-      deptTreeData: [],
-      deptChecked: [],
-      dataScopeExpandAll: true,
-      dataScopeCheckAll: false,
-      dataScopeCheckHalf: false,
-      dataScopeForm: {
-        id: null,
-        dataScope: '1',
-        deptCheckStrictly: 1
-      },
       assignDialogVisible: false,
       assignActiveTab: 'allocated',
       assignRole: {
@@ -541,14 +479,6 @@ export default {
   computed: {
     assignDialogTitle() {
       return this.assignRole.roleName ? `分配用户 - ${this.assignRole.roleName}` : '分配用户'
-    },
-    parentChildLink: {
-      get() {
-        return this.dataScopeForm.deptCheckStrictly === 1
-      },
-      set(value) {
-        this.dataScopeForm.deptCheckStrictly = value ? 1 : 0
-      }
     },
     filteredPermOptions() {
       const keyword = this.permKeyword.trim().toLowerCase()
@@ -597,16 +527,6 @@ export default {
         status: '0',
         remark: ''
       }
-    },
-    dataScopeText(value) {
-      const map = {
-        '1': '全部数据',
-        '2': '自定数据',
-        '3': '本部门',
-        '4': '本部门及以下',
-        '5': '仅本人数据权限'
-      }
-      return map[value] || '-'
     },
     async fetchList() {
       this.loading = true
@@ -741,29 +661,6 @@ export default {
       const next = new Set(this.permChecked || [])
       list.forEach(item => next.delete(item.permCode))
       this.permChecked = Array.from(next)
-    },
-    async openDataScopeDialog(row) {
-      try {
-        const data = await getRoleWithDeptTree(row.id)
-        this.deptTreeData = data.trees || []
-        this.deptChecked = data.checkedKeys || []
-        this.dataScopeForm = {
-          id: row.id,
-          dataScope: row.dataScope || '1',
-          deptCheckStrictly: row.deptCheckStrictly == null ? 1 : row.deptCheckStrictly
-        }
-        this.dataScopeExpandAll = true
-        this.dataScopeDialogVisible = true
-        this.$nextTick(() => {
-          if (this.$refs.deptTree) {
-            this.$refs.deptTree.setCheckedKeys(this.deptChecked)
-            this.updateTreeExpand(true)
-            this.updateCheckAllState()
-          }
-        })
-      } catch (error) {
-        console.error(error)
-      }
     },
     openAssignUser(row) {
       this.assignRole = {
@@ -931,91 +828,6 @@ export default {
         phone: ''
       }
     },
-    async saveDataScope() {
-      try {
-        const tree = this.$refs.deptTree
-        const checkedKeys = tree ? tree.getCheckedKeys() : []
-        const halfCheckedKeys = tree ? tree.getHalfCheckedKeys() : []
-        const deptIds = this.dataScopeForm.deptCheckStrictly === 1
-          ? Array.from(new Set([...checkedKeys, ...halfCheckedKeys]))
-          : checkedKeys
-        const payload = {
-          id: this.dataScopeForm.id,
-          dataScope: this.dataScopeForm.dataScope,
-          deptIds,
-          deptCheckStrictly: this.dataScopeForm.deptCheckStrictly
-        }
-        await updateRoleDataScope(payload)
-        Message.success('数据权限已更新')
-        this.dataScopeDialogVisible = false
-        this.fetchList()
-      } catch (error) {
-        console.error(error)
-      }
-    },
-    handleExpandChange(value) {
-      this.dataScopeExpandAll = value
-      this.updateTreeExpand(value)
-    },
-    handleCheckAllChange(value) {
-      const tree = this.$refs.deptTree
-      if (!tree) {
-        return
-      }
-      if (value) {
-        const allKeys = this.collectDeptIds(this.deptTreeData)
-        tree.setCheckedKeys(allKeys)
-        this.dataScopeCheckHalf = false
-      } else {
-        tree.setCheckedKeys([])
-        this.dataScopeCheckHalf = false
-      }
-    },
-    handleDeptCheckChange() {
-      this.updateCheckAllState()
-    },
-    updateCheckAllState() {
-      const tree = this.$refs.deptTree
-      if (!tree) {
-        this.dataScopeCheckAll = false
-        this.dataScopeCheckHalf = false
-        return
-      }
-      const checkedKeys = tree.getCheckedKeys() || []
-      const allKeys = this.collectDeptIds(this.deptTreeData)
-      if (allKeys.length === 0) {
-        this.dataScopeCheckAll = false
-        this.dataScopeCheckHalf = false
-        return
-      }
-      this.dataScopeCheckAll = checkedKeys.length === allKeys.length
-      this.dataScopeCheckHalf = checkedKeys.length > 0 && checkedKeys.length < allKeys.length
-    },
-    updateTreeExpand(expand) {
-      const tree = this.$refs.deptTree
-      if (!tree || !tree.store) {
-        return
-      }
-      const nodes = typeof tree.store._getAllNodes === 'function'
-        ? tree.store._getAllNodes()
-        : Object.values(tree.store.nodesMap || {})
-      nodes.forEach(node => {
-        node.expanded = !!expand
-      })
-    },
-    collectDeptIds(tree = []) {
-      const ids = []
-      const walk = nodes => {
-        nodes.forEach(node => {
-          ids.push(node.id)
-          if (node.children && node.children.length) {
-            walk(node.children)
-          }
-        })
-      }
-      walk(tree)
-      return ids
-    },
     statusTagType(value) {
       return value === '0' ? 'success' : 'info'
     }
@@ -1122,20 +934,6 @@ export default {
   text-align: center;
   color: #9aa6bf;
   font-size: 12px;
-}
-
-.data-scope-box {
-  border: 1px solid #e1e8ff;
-  border-radius: 12px;
-  padding: 10px 12px 12px;
-  background: #f8faff;
-}
-
-.data-scope-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 8px;
 }
 
 .assign-toolbar {
