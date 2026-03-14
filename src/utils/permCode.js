@@ -105,7 +105,7 @@ export const PERMS = Object.freeze({
   // 博客配置
   config: {
     page: 'blog:config:page',
-    update: 'blog:config:update:btn'
+    batchUpdate: 'blog:config:batchUpdate:btn'
   },
   // 我的通知
   notification: {

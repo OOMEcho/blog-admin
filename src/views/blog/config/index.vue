@@ -25,6 +25,9 @@
           <el-form-item label="站点公告">
             <el-input v-model="siteForm.site_notice" type="textarea" :rows="2" placeholder="请输入站点公告内容"/>
           </el-form-item>
+          <el-form-item label="关于内容">
+            <el-input v-model="siteForm.site_about" type="textarea" :rows="4" placeholder="支持 HTML 内容"/>
+          </el-form-item>
           <el-row :gutter="24">
             <el-col :span="16">
               <el-form-item label="站点头像">
@@ -46,6 +49,9 @@
           </el-row>
           <el-form-item label="备案号">
             <el-input v-model="siteForm.site_record_number" placeholder="ICP备XXXXXXXX号" clearable style="max-width:320px"/>
+          </el-form-item>
+          <el-form-item label="页脚文案">
+            <el-input v-model="siteForm.site_footer" placeholder="例如：© 2026 我的博客" clearable/>
           </el-form-item>
         </el-form>
       </el-card>
@@ -93,7 +99,7 @@
 
       <!-- 保存按钮 -->
       <div class="save-bar">
-        <el-button v-perm="PERMS.config.update" type="primary" size="medium" icon="el-icon-check" :loading="saving" @click="handleSaveAll">保存全部</el-button>
+        <el-button v-perm="PERMS.config.batchUpdate" type="primary" size="medium" icon="el-icon-check" :loading="saving" @click="handleSaveAll">保存全部</el-button>
         <el-button size="medium" icon="el-icon-refresh-left" @click="fetchList">重置</el-button>
       </div>
     </div>
@@ -105,7 +111,7 @@ import {getBlogConfigList, batchUpdateBlogConfig} from '@/api/blogconfig'
 import {PERMS} from '@/utils/permCode'
 
 /** 配置键与所属分组映射 */
-const SITE_KEYS = ['site_name', 'site_description', 'site_author', 'site_avatar', 'site_notice', 'site_record_number']
+const SITE_KEYS = ['site_name', 'site_description', 'site_author', 'site_avatar', 'site_notice', 'site_about', 'site_record_number', 'site_footer']
 const SOCIAL_KEYS = ['social_github', 'social_gitee', 'social_email', 'social_qq']
 
 export default {
@@ -115,32 +121,49 @@ export default {
       PERMS,
       loading: false,
       saving: false,
-      /** 原始配置列表，保留 id 等信息用于提交 */
       configList: [],
-      siteForm: {
+      siteForm: this.getDefaultSiteForm(),
+      socialForm: this.getDefaultSocialForm()
+    }
+  },
+  created() { this.fetchList() },
+  methods: {
+    getDefaultSiteForm() {
+      return {
         site_name: '',
         site_description: '',
         site_author: '',
         site_avatar: '',
         site_notice: '',
-        site_record_number: ''
-      },
-      socialForm: {
+        site_about: '',
+        site_record_number: '',
+        site_footer: ''
+      }
+    },
+    getDefaultSocialForm() {
+      return {
         social_github: '',
         social_gitee: '',
         social_email: '',
         social_qq: ''
       }
-    }
-  },
-  created() { this.fetchList() },
-  methods: {
+    },
+    getConfigValue(configKey) {
+      if (Object.prototype.hasOwnProperty.call(this.siteForm, configKey)) {
+        return this.siteForm[configKey]
+      }
+      if (Object.prototype.hasOwnProperty.call(this.socialForm, configKey)) {
+        return this.socialForm[configKey]
+      }
+      return ''
+    },
     async fetchList() {
       this.loading = true
       try {
         const data = await getBlogConfigList()
         this.configList = data || []
-        // 将列表数据填充到对应表单
+        this.siteForm = this.getDefaultSiteForm()
+        this.socialForm = this.getDefaultSocialForm()
         this.configList.forEach(item => {
           if (SITE_KEYS.includes(item.configKey)) {
             this.siteForm[item.configKey] = item.configValue || ''
@@ -155,17 +178,14 @@ export default {
     async handleSaveAll() {
       this.saving = true
       try {
-        // 将表单数据合并回 configList，保留原始 id
-        const merged = this.configList.map(item => ({
-          ...item,
-          configValue: this.siteForm[item.configKey] !== undefined
-            ? this.siteForm[item.configKey]
-            : this.socialForm[item.configKey] !== undefined
-              ? this.socialForm[item.configKey]
-              : item.configValue
+        const managedKeys = [...SITE_KEYS, ...SOCIAL_KEYS]
+        const payload = managedKeys.map(configKey => ({
+          configKey,
+          configValue: this.getConfigValue(configKey)
         }))
-        await batchUpdateBlogConfig(merged)
+        await batchUpdateBlogConfig(payload)
         this.$message.success('保存成功')
+        await this.fetchList()
       } finally {
         this.saving = false
       }
