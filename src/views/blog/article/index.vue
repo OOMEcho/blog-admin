@@ -128,7 +128,21 @@
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="封面图">
-              <el-input v-model="form.coverImage" placeholder="封面图URL"/>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <el-input v-model="form.coverImage" placeholder="封面图URL"/>
+                <el-upload
+                  action="#"
+                  :show-file-list="false"
+                  :http-request="handleCoverUpload">
+                  <el-button size="small">上传封面</el-button>
+                </el-upload>
+              </div>
+              <img
+                v-if="form.coverImage"
+                :src="form.coverImage"
+                alt="封面预览"
+                style="margin-top:10px;max-width:220px;max-height:120px;border:1px solid #ebeef5;border-radius:4px;object-fit:cover;"
+              >
             </el-form-item>
           </el-col>
           <el-col :span="6">
@@ -146,7 +160,12 @@
           <el-input v-model="form.summary" type="textarea" :rows="2" placeholder="文章摘要"/>
         </el-form-item>
         <el-form-item label="正文" prop="content">
-          <mavon-editor v-model="form.content" style="min-height:400px" ref="mavonEditor"/>
+          <mavon-editor
+            v-model="form.content"
+            style="min-height:400px"
+            ref="mavonEditor"
+            @imgAdd="handleImageAdd"
+          />
         </el-form-item>
       </el-form>
       <div slot="footer">
@@ -175,6 +194,7 @@
 import {getArticlePageList, addArticle, updateArticle, deleteArticle, auditArticle} from '@/api/article'
 import {getCategoryList} from '@/api/category'
 import {getTagList} from '@/api/tag'
+import {uploadFile} from '@/api/file'
 import {PERMS} from '@/utils/permCode'
 import mavonEditor from 'mavon-editor'
 import 'mavon-editor/dist/css/index.css'
@@ -255,6 +275,50 @@ export default {
       }
       this.dialogVisible = true
       this.$nextTick(() => this.$refs.form && this.$refs.form.clearValidate())
+    },
+    resolveAccessUrl(fileMeta) {
+      if (!fileMeta) {
+        return ''
+      }
+      return fileMeta.accessUrl || ''
+    },
+    async handleImageAdd(pos, file) {
+      const formData = new FormData()
+      formData.append('file', file)
+      try {
+        const data = await uploadFile(formData, 'article')
+        const imageUrl = this.resolveAccessUrl(data)
+        if (!imageUrl) {
+          throw new Error('上传成功但未返回访问地址')
+        }
+        this.$refs.mavonEditor.$img2Url(pos, imageUrl)
+        this.$message.success('图片上传成功')
+      } catch (error) {
+        console.error(error)
+        this.$message.error('图片上传失败')
+      }
+    },
+    async handleCoverUpload(option) {
+      const formData = new FormData()
+      formData.append('file', option.file)
+      try {
+        const data = await uploadFile(formData, 'article/cover')
+        const coverUrl = this.resolveAccessUrl(data)
+        if (!coverUrl) {
+          throw new Error('上传成功但未返回访问地址')
+        }
+        this.form.coverImage = coverUrl
+        this.$message.success('封面上传成功')
+        if (option.onSuccess) {
+          option.onSuccess(data)
+        }
+      } catch (error) {
+        console.error(error)
+        this.$message.error('封面上传失败')
+        if (option.onError) {
+          option.onError(error)
+        }
+      }
     },
     async handleSubmit(status) {
       this.$refs.form.validate(async valid => {
