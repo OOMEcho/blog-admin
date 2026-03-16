@@ -177,11 +177,11 @@
 
     <!-- 审核拒绝弹窗 -->
     <el-dialog title="审核拒绝" :visible.sync="rejectDialogVisible" width="500px">
-      <el-form ref="rejectForm" :model="rejectForm" label-width="80px">
-        <el-form-item label="拒绝原因">
-          <el-input v-model="rejectForm.rejectReason" type="textarea" :rows="3" placeholder="请输入拒绝原因（可选）"/>
-        </el-form-item>
-      </el-form>
+        <el-form ref="rejectForm" :model="rejectForm" label-width="80px">
+          <el-form-item label="拒绝原因">
+            <el-input v-model="rejectForm.rejectReason" type="textarea" :rows="3" placeholder="请输入拒绝原因"/>
+          </el-form-item>
+        </el-form>
       <div slot="footer">
         <el-button @click="rejectDialogVisible = false">取消</el-button>
         <el-button type="danger" :loading="submitting" @click="confirmReject">确认拒绝</el-button>
@@ -343,7 +343,7 @@ export default {
     handleAudit(row, status) {
       if (status === '1') {
         this.$confirm(`确认审核通过文章《${row.title}》？`, '审核确认', {type: 'success'}).then(async () => {
-          await auditArticle(row.id, status, '')
+          await auditArticle(row.id, {status, rejectReason: ''})
           this.$message.success('审核通过')
           this.fetchList()
         }).catch(() => {})
@@ -353,9 +353,16 @@ export default {
       }
     },
     async confirmReject() {
+      if (!this.rejectForm.rejectReason || !this.rejectForm.rejectReason.trim()) {
+        this.$message.warning('请填写拒绝原因')
+        return
+      }
       this.submitting = true
       try {
-        await auditArticle(this.rejectForm.id, '3', this.rejectForm.rejectReason)
+        await auditArticle(this.rejectForm.id, {
+          status: '3',
+          rejectReason: this.rejectForm.rejectReason.trim()
+        })
         this.$message.success('已拒绝')
         this.rejectDialogVisible = false
         this.fetchList()

@@ -63,11 +63,10 @@ export function deleteArticle(id) {
 /**
  * 审核文章
  * @param {number} id 文章ID
- * @param {string} status 审核结果(1=通过,3=拒绝)
- * @param {string} rejectReason 拒绝原因（拒绝时填写）
+ * @param {Object} data 审核参数
+ * @param {string} data.status 审核结果(1=通过,3=拒绝)
+ * @param {string} data.rejectReason 拒绝原因（拒绝时必填）
  */
-export function auditArticle(id, status, rejectReason) {
-  const params = new URLSearchParams({status})
-  if (rejectReason) params.append('rejectReason', rejectReason)
-  return putRequest(`/article/audit/${id}?${params.toString()}`)
+export function auditArticle(id, data) {
+  return putRequest(`/article/audit/${id}`, data)
 }
