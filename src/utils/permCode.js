@@ -89,12 +89,6 @@ export const PERMS = Object.freeze({
     update: 'blog:tag:update:btn',
     delete: 'blog:tag:delete:btn'
   },
-  // 评论管理
-  comment: {
-    page: 'blog:comment:page',
-    audit: 'blog:comment:audit:btn',
-    delete: 'blog:comment:delete:btn'
-  },
   // 友链管理
   link: {
     page: 'blog:link:page',

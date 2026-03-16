@@ -10,21 +10,21 @@
           <div class="quick-title">文章管理</div>
           <div class="quick-desc">发布与管理博客文章</div>
         </button>
-        <button v-perm="PERMS.comment.page" type="button" class="quick-item hero-quick-item" @click="go('/blog/comment')">
-          <i class="el-icon-chat-dot-round"></i>
-          <div class="quick-title">评论审核</div>
-          <div class="quick-desc">审核与管理读者评论</div>
-        </button>
         <button v-perm="PERMS.user.page" type="button" class="quick-item hero-quick-item" @click="go('/system/user')">
           <i class="el-icon-user"></i>
           <div class="quick-title">用户管理</div>
           <div class="quick-desc">账号与基础信息维护</div>
         </button>
+        <button v-perm="PERMS.notification.page" type="button" class="quick-item hero-quick-item" @click="go('/notification')">
+          <i class="el-icon-bell"></i>
+          <div class="quick-title">我的通知</div>
+          <div class="quick-desc">查看审核与系统通知</div>
+        </button>
       </div>
     </section>
 
     <el-row :gutter="16" class="stats-row">
-      <el-col :span="6">
+      <el-col :span="8">
         <el-card class="stat-card">
           <div class="stat-head">
             <i class="el-icon-document stat-icon"></i>
@@ -34,17 +34,7 @@
           <div class="stat-meta">近 7 日 {{ growth.article }}</div>
         </el-card>
       </el-col>
-      <el-col :span="6">
-        <el-card class="stat-card">
-          <div class="stat-head">
-            <i class="el-icon-chat-dot-round stat-icon"></i>
-            <span class="stat-title">评论总数</span>
-          </div>
-          <div class="stat-value">{{ stats.comment }}</div>
-          <div class="stat-meta">近 7 日 {{ growth.comment }}</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
+      <el-col :span="8">
         <el-card class="stat-card">
           <div class="stat-head">
             <i class="el-icon-user stat-icon"></i>
@@ -54,7 +44,7 @@
           <div class="stat-meta">近 7 日 {{ growth.user }}</div>
         </el-card>
       </el-col>
-      <el-col :span="6">
+      <el-col :span="8">
         <el-card class="stat-card">
           <div class="stat-head">
             <i class="el-icon-view stat-icon"></i>
@@ -92,13 +82,12 @@
           </div>
           <div class="intro-text">
             <p>
-              Blog Admin 是个人博客管理后台，提供文章发布、评论审核、用户管理、权限配置等完整功能，助力博主专注创作。
+              Blog Admin 是个人博客管理后台，提供文章发布、用户管理、权限配置等完整功能，助力博主专注创作。
             </p>
           </div>
           <ul class="tips-list">
             <li>文章管理：支持 Markdown 编辑、分类标签、审核发布流程。</li>
-            <li>评论管理：评论树形展示，一键审核通过或拒绝。</li>
-            <li>通知中心：文章审核结果、评论审核结果站内通知。</li>
+            <li>通知中心：文章审核结果与系统消息统一管理。</li>
             <li>多样化登录：账号密码、邮箱验证码、滑块验证码与 RSA 加密传输。</li>
             <li>权限驱动菜单与路由：动态生成菜单与路由，统一权限配置入口。</li>
             <li>日志与审计：操作日志与登录日志留痕，满足审计与排查。</li>
@@ -125,13 +114,11 @@ export default {
     return {
       stats: {
         article: '--',
-        comment: '--',
         user: '--',
         view: '--'
       },
       growth: {
         article: '+0.0%',
-        comment: '+0.0%',
         user: '+0.0%',
         view: '+0.0%'
       },
@@ -200,13 +187,11 @@ export default {
         const data = await getDashboardStatistics()
         this.stats = {
           article: data.articleCount || '0',
-          comment: data.commentCount || '0',
           user: data.userCount || '0',
           view: data.viewCount || '0'
         }
         this.growth = {
           article: data.articleGrowthRate || '+0.0%',
-          comment: data.commentGrowthRate || '+0.0%',
           user: data.userGrowthRate || '+0.0%',
           view: data.viewGrowthRate || '+0.0%'
         }

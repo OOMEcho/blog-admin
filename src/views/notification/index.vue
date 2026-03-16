@@ -9,7 +9,6 @@
         <el-form-item label="类型">
           <el-select v-model="queryParams.type" placeholder="通知类型" clearable>
             <el-option label="审核通知" value="AUDIT"/>
-            <el-option label="评论通知" value="COMMENT"/>
             <el-option label="系统通知" value="SYSTEM"/>
           </el-select>
         </el-form-item>
@@ -107,11 +106,11 @@ export default {
       return row.isRead ? '' : 'unread-row'
     },
     typeLabel(type) {
-      const map = {'AUDIT': '审核通知', 'COMMENT': '评论通知', 'SYSTEM': '系统通知'}
+      const map = {'AUDIT': '审核通知', 'SYSTEM': '系统通知'}
       return map[type] || type
     },
     typeTagType(type) {
-      const map = {'AUDIT': 'warning', 'COMMENT': 'primary', 'SYSTEM': 'info'}
+      const map = {'AUDIT': 'warning', 'SYSTEM': 'info'}
       return map[type] || 'info'
     }
   }

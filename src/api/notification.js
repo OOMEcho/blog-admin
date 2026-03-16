@@ -3,7 +3,7 @@ import {getRequest, putRequest} from "@/utils/request"
 /**
  * 分页查询通知列表
  * @param {Object} params 查询参数
- * @param {string} params.type 通知类型(AUDIT=文章审核,COMMENT=评论通知,SYSTEM=系统通知)
+ * @param {string} params.type 通知类型(AUDIT=文章审核,SYSTEM=系统通知)
  * @param {number} params.isRead 是否已读(0=未读,1=已读)
  * @param {number} params.pageNum 页数
  * @param {number} params.pageSize 每页大小
