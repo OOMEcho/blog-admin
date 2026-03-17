@@ -160,6 +160,17 @@
           <el-input v-model="form.summary" type="textarea" :rows="2" placeholder="文章摘要"/>
         </el-form-item>
         <el-form-item label="正文" prop="content">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <el-button size="small" icon="el-icon-upload2" @click="triggerMarkdownImport">导入 Markdown</el-button>
+            <span style="font-size:12px;color:#909399;">支持 .md / .markdown / .txt，最大 5MB</span>
+            <input
+              ref="markdownInput"
+              type="file"
+              accept=".md,.markdown,.txt,text/markdown,text/plain"
+              style="display:none"
+              @change="handleMarkdownImport"
+            >
+          </div>
           <mavon-editor
             v-model="form.content"
             style="min-height:400px"
@@ -216,6 +227,7 @@ export default {
       dialogVisible: false,
       dialogTitle: '新增文章',
       form: {id: null, authorId: null, title: '', categoryId: null, tagIds: [], status: '', coverImage: '', isTop: 0, sort: 0, summary: '', content: ''},
+      maxMarkdownSize: 5 * 1024 * 1024,
       rules: {
         title: [{required: true, message: '请输入文章标题', trigger: 'blur'}],
         categoryId: [{required: true, message: '请选择分类', trigger: 'change'}],
@@ -281,6 +293,75 @@ export default {
         return ''
       }
       return fileMeta.accessUrl || ''
+    },
+    triggerMarkdownImport() {
+      if (this.$refs.markdownInput) {
+        this.$refs.markdownInput.click()
+      }
+    },
+    isMarkdownFile(file) {
+      const lowerName = ((file && file.name) || '').toLowerCase()
+      return lowerName.endsWith('.md') || lowerName.endsWith('.markdown') || lowerName.endsWith('.txt')
+    },
+    resetMarkdownInput() {
+      if (this.$refs.markdownInput) {
+        this.$refs.markdownInput.value = ''
+      }
+    },
+    readFileAsText(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result || '')
+        reader.onerror = () => reject(new Error('读取文件失败'))
+        reader.readAsText(file, 'utf-8')
+      })
+    },
+    async handleMarkdownImport(event) {
+      const file = event.target && event.target.files && event.target.files[0]
+      if (!file) {
+        return
+      }
+
+      try {
+        if (!this.isMarkdownFile(file)) {
+          this.$message.warning('仅支持 .md / .markdown / .txt 文件')
+          return
+        }
+
+        if (file.size > this.maxMarkdownSize) {
+          this.$message.warning('文件大小不能超过 5MB')
+          return
+        }
+
+        if ((this.form.content || '').trim()) {
+          try {
+            await this.$confirm('导入将覆盖当前正文内容，是否继续？', '覆盖确认', {type: 'warning'})
+          } catch (e) {
+            return
+          }
+        }
+
+        let text = await this.readFileAsText(file)
+        if (typeof text !== 'string') {
+          text = String(text || '')
+        }
+
+        text = text.replace(/^\uFEFF/, '')
+        this.form.content = text
+
+        this.$nextTick(() => {
+          if (this.$refs.form) {
+            this.$refs.form.validateField('content')
+          }
+        })
+
+        this.$message.success(`已导入：${file.name}`)
+      } catch (error) {
+        console.error(error)
+        this.$message.error('Markdown 导入失败')
+      } finally {
+        this.resetMarkdownInput()
+      }
     },
     async handleImageAdd(pos, file) {
       const formData = new FormData()
