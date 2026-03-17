@@ -47,12 +47,33 @@
               </div>
             </el-col>
           </el-row>
-          <el-form-item label="备案号">
-            <el-input v-model="siteForm.site_record_number" placeholder="ICP备XXXXXXXX号" clearable style="max-width:320px"/>
-          </el-form-item>
           <el-form-item label="页脚文案">
             <el-input v-model="siteForm.site_footer" placeholder="例如：© 2026 我的博客" clearable/>
           </el-form-item>
+          <el-row :gutter="24">
+            <el-col :span="12">
+              <el-form-item label="ICP备案号">
+                <el-input v-model="siteForm.site_record_number" placeholder="例如：蜀ICP备2020025692号-2" clearable/>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="ICP备案链接">
+                <el-input v-model="siteForm.site_record_url" placeholder="https://beian.miit.gov.cn" clearable/>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="24">
+            <el-col :span="12">
+              <el-form-item label="公安备案号">
+                <el-input v-model="siteForm.site_public_security_record_number" placeholder="例如：川公网安备 xxxxxxxxxxx号" clearable/>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="公安备案链接">
+                <el-input v-model="siteForm.site_public_security_record_url" placeholder="https://www.beian.gov.cn/..." clearable/>
+              </el-form-item>
+            </el-col>
+          </el-row>
         </el-form>
       </el-card>
 
@@ -111,7 +132,19 @@ import {getBlogConfigList, batchUpdateBlogConfig} from '@/api/blogconfig'
 import {PERMS} from '@/utils/permCode'
 
 /** 配置键与所属分组映射 */
-const SITE_KEYS = ['site_name', 'site_description', 'site_author', 'site_avatar', 'site_notice', 'site_about', 'site_record_number', 'site_footer']
+const SITE_KEYS = [
+  'site_name',
+  'site_description',
+  'site_author',
+  'site_avatar',
+  'site_notice',
+  'site_about',
+  'site_record_number',
+  'site_record_url',
+  'site_public_security_record_number',
+  'site_public_security_record_url',
+  'site_footer'
+]
 const SOCIAL_KEYS = ['social_github', 'social_gitee', 'social_email', 'social_qq']
 
 export default {
@@ -137,6 +170,9 @@ export default {
         site_notice: '',
         site_about: '',
         site_record_number: '',
+        site_record_url: '',
+        site_public_security_record_number: '',
+        site_public_security_record_url: '',
         site_footer: ''
       }
     },
