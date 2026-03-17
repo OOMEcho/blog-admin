@@ -7,20 +7,8 @@
           <span><i class="el-icon-setting" style="margin-right:6px"/>站点信息</span>
         </div>
         <el-form :model="siteForm" label-width="110px" size="small">
-          <el-row :gutter="24">
-            <el-col :span="12">
-              <el-form-item label="站点名称">
-                <el-input v-model="siteForm.site_name" placeholder="请输入站点名称" clearable/>
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="站点作者">
-                <el-input v-model="siteForm.site_author" placeholder="请输入作者名称" clearable/>
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-form-item label="站点描述">
-            <el-input v-model="siteForm.site_description" type="textarea" :rows="2" placeholder="请输入站点描述"/>
+          <el-form-item label="站点名称">
+            <el-input v-model="siteForm.site_name" placeholder="请输入站点名称" clearable/>
           </el-form-item>
           <el-form-item label="站点公告">
             <el-input v-model="siteForm.site_notice" type="textarea" :rows="2" placeholder="请输入站点公告内容"/>
@@ -31,7 +19,16 @@
           <el-row :gutter="24">
             <el-col :span="16">
               <el-form-item label="站点头像">
-                <el-input v-model="siteForm.site_avatar" placeholder="请输入头像图片URL" clearable/>
+                <div class="avatar-upload-row">
+                  <el-input v-model="siteForm.site_avatar" placeholder="请输入头像图片URL" clearable/>
+                  <el-upload
+                    action="#"
+                    :show-file-list="false"
+                    :http-request="handleAvatarUpload"
+                  >
+                    <el-button size="small" :loading="avatarUploading">上传头像</el-button>
+                  </el-upload>
+                </div>
               </el-form-item>
             </el-col>
             <el-col :span="8">
@@ -129,13 +126,12 @@
 
 <script>
 import {getBlogConfigList, batchUpdateBlogConfig} from '@/api/blogconfig'
+import {uploadFile} from '@/api/file'
 import {PERMS} from '@/utils/permCode'
 
 /** 配置键与所属分组映射 */
 const SITE_KEYS = [
   'site_name',
-  'site_description',
-  'site_author',
   'site_avatar',
   'site_notice',
   'site_about',
@@ -154,6 +150,7 @@ export default {
       PERMS,
       loading: false,
       saving: false,
+      avatarUploading: false,
       configList: [],
       siteForm: this.getDefaultSiteForm(),
       socialForm: this.getDefaultSocialForm()
@@ -161,11 +158,40 @@ export default {
   },
   created() { this.fetchList() },
   methods: {
+    resolveAccessUrl(fileMeta) {
+      if (!fileMeta) {
+        return ''
+      }
+      return fileMeta.accessUrl || ''
+    },
+    async handleAvatarUpload(option) {
+      const formData = new FormData()
+      formData.append('file', option.file)
+      this.avatarUploading = true
+      try {
+        const data = await uploadFile(formData, 'site/avatar')
+        const avatarUrl = this.resolveAccessUrl(data)
+        if (!avatarUrl) {
+          throw new Error('上传成功但未返回访问地址')
+        }
+        this.siteForm.site_avatar = avatarUrl
+        this.$message.success('头像上传成功')
+        if (option.onSuccess) {
+          option.onSuccess(data)
+        }
+      } catch (error) {
+        console.error(error)
+        this.$message.error('头像上传失败')
+        if (option.onError) {
+          option.onError(error)
+        }
+      } finally {
+        this.avatarUploading = false
+      }
+    },
     getDefaultSiteForm() {
       return {
         site_name: '',
-        site_description: '',
-        site_author: '',
         site_avatar: '',
         site_notice: '',
         site_about: '',
@@ -242,6 +268,11 @@ export default {
   display: flex;
   align-items: center;
   height: 32px;
+}
+.avatar-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .avatar-error {
   font-size: 11px;
