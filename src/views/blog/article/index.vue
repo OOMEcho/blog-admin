@@ -183,6 +183,7 @@
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button :loading="submitting" @click="handleSubmit('0')">保存草稿</el-button>
         <el-button type="primary" :loading="submitting" @click="handleSubmit('2')">提交审核</el-button>
+        <el-button v-if="isSuperAdmin" type="success" :loading="submitting" @click="handleSubmit('1')">直接发布</el-button>
       </div>
     </el-dialog>
 
@@ -235,6 +236,14 @@ export default {
       },
       rejectDialogVisible: false,
       rejectForm: {id: null, rejectReason: ''}
+    }
+  },
+  computed: {
+    userInfo() {
+      return this.$store.state.auth.userInfo || {}
+    },
+    isSuperAdmin() {
+      return Number(this.userInfo.id) === 1
     }
   },
   created() {
@@ -409,17 +418,20 @@ export default {
           const data = {...this.form, status}
           if (data.id) {
             await updateArticle(data)
-            this.$message.success('修改成功')
           } else {
             await addArticle(data)
-            this.$message.success(status === '2' ? '提交审核成功' : '保存草稿成功')
           }
+          this.$message.success(this.getSubmitSuccessMessage(status))
           this.dialogVisible = false
           this.fetchList()
         } finally {
           this.submitting = false
         }
       })
+    },
+    getSubmitSuccessMessage(status) {
+      const map = {'0': '保存草稿成功', '1': '发布成功', '2': '提交审核成功'}
+      return map[status] || '操作成功'
     },
     handleAudit(row, status) {
       if (status === '1') {
