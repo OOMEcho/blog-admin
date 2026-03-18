@@ -1,245 +1,235 @@
 <div align="center">
 
 [![Vue](https://img.shields.io/badge/Vue-2.7.16-brightgreen.svg)](https://v2.cn.vuejs.org/)
+[![Vue Router](https://img.shields.io/badge/VueRouter-3.6.5-red.svg)](https://router.vuejs.org/)
 [![Vuex](https://img.shields.io/badge/Vuex-3.6.2-purple.svg)](https://vuex.vuejs.org/zh/)
-[![VueRouter](https://img.shields.io/badge/VueRouter-3.6.5-red.svg)](https://router.vuejs.org/)
 [![Element UI](https://img.shields.io/badge/ElementUI-2.15.14-blue.svg)](https://element.eleme.cn/#/zh-CN)
-[![Axios](https://img.shields.io/badge/Axios-1.11.0-yellow.svg)](https://element.eleme.cn/#/zh-CN)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/OOMEcho/aegis)
-## 🍟 如果您觉得有帮助，请点右上角 "Star" 支持一下谢谢
+[![Axios](https://img.shields.io/badge/Axios-1.11.0-yellow.svg)](https://axios-http.com/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.txt)
+
+## 🍟 如果这个项目对你有帮助，请 Star 支持
 
 </div>
 
-## 🌟 项目介绍
+## 🌟 项目简介
 
-Aegis是一个功能完整的企业级RBAC(Role-Based Access Control)权限管理系统，采用前后端分离架构设计。系统以权限为核心，
-通过用户 -> 角色 -> 权限完成授权，菜单路由与接口资源都通过权限进行关联和控制，可作为企业应用开发的基础框架。
+`blog-admin` 是博客系统的后台管理端，基于 Vue2 + Element UI 开发，面向内容管理与系统管理场景。
 
-### ✨ 核心特性
-
-- 🔐 **多样化登录**：账号密码、邮箱验证码登录
-- 🧩 **滑块验证码**：登录安全校验，降低恶意登录风险
-- 🔑 **RSA 加密**：密码加密传输，配合后端公钥
-- 🧭 **权限驱动菜单/路由**：基于权限动态生成路由与菜单
-- 🎯 **按钮级权限指令**：细粒度操作权限控制
-- 🗂️ **标签页导航**：多页签快速切换与缓存
-- 🧰 **完整后台模块**：用户/角色/权限/菜单/资源/部门/字典/日志/通知/文件等
+项目支持动态路由、按钮级权限、滑块验证码、RSA 密码加密、JWT 自动续期等能力，可与 `blog` 后端无缝配合，完成从登录到权限控制再到业务管理的完整闭环。
 
 ## 🔗 相关项目
 
-- 点击跳转[后端仓库](https://github.com/OOMEcho/aegis)
+- 后端服务（Spring Boot）：<https://github.com/OOMEcho/blog>
+- 博客前台（Vue2）：<https://github.com/OOMEcho/blog-web>
+- 当前仓库（后台）：<https://github.com/OOMEcho/blog-admin>
 
-## 🌐 在线演示
+## 🧭 架构设计
 
-- 点击跳转[演示地址](https://aegis.lxsblogs.cn)
+### 1) 系统整体架构
 
-## 🔐 默认账号
+```text
+┌───────────────────────┐
+│ Browser               │
+└──────────┬────────────┘
+           │
+           ▼
+┌───────────────────────┐
+│ blog-admin (Vue2)     │
+│ Router + Vuex + UI    │
+└──────────┬────────────┘
+           │ /api
+           ▼
+┌───────────────────────┐
+│ blog-api (SpringBoot) │
+└──────────┬────────────┘
+           ├────────────► MySQL
+           └────────────► Redis
+```
 
-- 管理员账号：
-  - 账号：`admin`
-  - 密码：`123456`
-- 普通用户账号：
-  - 账号：`visitor`
-  - 密码：`123456`
+### 2) 前端工程架构
 
-## 🏗️ 技术架构
+| 层级 | 目录 | 职责 |
+| --- | --- | --- |
+| 接口层 | `src/api` | 业务 API 封装 |
+| 路由层 | `src/router` | 登录守卫、动态路由注入、404 回退 |
+| 状态层 | `src/store/modules` | 认证状态、权限路由、标签页缓存 |
+| 视图层 | `src/views` | 仪表盘、系统管理、博客管理、日志管理等页面 |
+| 组件层 | `src/components` | Layout、登录注册、滑块验证码、侧栏、标签页 |
+| 能力层 | `src/utils`、`src/directive` | 请求拦截、加密工具、按钮权限指令 |
 
-### 🧱 技术栈
+### 3) 关键流程
 
-| 技术         | 版本      | 说明      |
-|------------|---------|---------|
-| Vue        | 2.7.16  | 前端框架    |
-| Vue Router | 3.6.2   | 路由管理    |
-| Vuex       | 3.6.2   | 状态管理    |
-| Element UI | 2.15.14 | 组件库     |
-| Axios      | 1.11.0  | HTTP 请求 |
-| Echarts    | 4.9.0   | 图表展示    |
-| wangeditor | 4.7.15  | 富文本     |
-| JSEncrypt  | 3.5.4   | RSA 加密  |
-| NProgress  | 0.2.0   | 路由进度条   |
+1. 登录页支持账号密码/邮箱验证码两种方式，提交前通过滑块校验。
+2. 密码登录会先用后端公钥进行 RSA 加密，再发送登录请求。
+3. 登录成功后保存 Access Token；401 时自动请求刷新接口并重放原请求。
+4. 获取用户信息后生成动态路由，页面按钮通过 `v-perm` 做权限可见性控制。
+
+## ✨ 核心优势
+
+- 安全链路完善：滑块验证码 + RSA + Access/Refresh Token + 自动续期重放。
+- 权限模型清晰：后端菜单树驱动路由，权限码驱动按钮，前后端一致。
+- 内容运营能力完善：支持 Markdown 文章发布/编辑/预览与审核流，支持博客配置项可视化维护。
+- 模块覆盖完整：用户、角色、菜单、资源、字典、白名单、文章、博客配置、日志、文件、通知。
+- 可维护性高：按模块拆分 API、Store、View，目录职责单一、扩展成本低。
+- 部署友好：支持本地代理联调、同域反向代理、跨域独立部署三种模式。
+
+## 🏗️ 技术栈
+
+| 技术 | 版本 | 说明 |
+| --- | --- | --- |
+| Vue | 2.7.16 | 前端框架 |
+| Vue Router | 3.6.5 | 路由管理（history 模式） |
+| Vuex | 3.6.2 | 状态管理 |
+| Element UI | 2.15.14 | UI 组件库 |
+| Axios | 1.11.0 | 请求库 |
+| ECharts | 4.9.0 | 图表展示 |
+| mavon-editor | 2.10.4 | Markdown 编辑/预览 |
+| node-forge | 1.3.3 | RSA 加解密 |
+| NProgress | 0.2.0 | 路由加载进度 |
 
 ## 🚀 快速开始
 
-### 环境要求
+### 1) 环境准备
 
-- Node.js
-- npm
+- Node.js 16+
+- npm 8+
 
-### 本地开发
+### 2) 克隆项目
 
-1. **克隆项目**
 ```bash
-git clone https://github.com/OOMEcho/aegis-vue.git
-cd aegis-vue
+git clone https://github.com/OOMEcho/blog-admin.git
+cd blog-admin
 ```
 
-2. **安装依赖**
+### 3) 安装依赖
 
 ```bash
 npm install
 ```
 
-3. **配置环境变量**
+### 4) 配置环境变量
 
-开发环境：`.env.development`
-
-```bash
-VUE_APP_BASE_PRE = '/api'
-VUE_APP_BASE_API = 'http://127.0.0.1:8080'
-```
-
-生产环境：`.env.production`
+开发环境（`.env.development`）：
 
 ```bash
-VUE_APP_BASE_PRE = '/prod-api'
-VUE_APP_BASE_API = 'http://127.0.0.1:8080'
+VUE_APP_BASE_PRE=/api
+VUE_APP_BASE_API=http://127.0.0.1:9090
 ```
 
-说明：`VUE_APP_BASE_PRE` 作为请求前缀用于本地代理转发，`VUE_APP_BASE_API` 指向后端服务地址。
+生产环境（`.env.production`）推荐两种模式：
 
-4. **启动开发服务**
+```bash
+# 模式A：同域反向代理（推荐）
+VUE_APP_BASE_API=/api
+
+# 模式B：独立 API 域名
+VUE_APP_BASE_API=https://api.yourblog.cn
+```
+
+### 5) 启动开发服务
 
 ```bash
 npm run serve
 ```
 
-默认端口：`http://localhost:9090`
+默认访问：<http://127.0.0.1:9099>
 
-### 构建生产包
+### 6) 登录验证
+
+- 先确保后端 `blog` 已运行在 `http://127.0.0.1:9090`。
+- 默认管理员账号（后端初始化）：`admin / 123456`。
+
+## 🌐 部署说明
+
+### 1) 打包
 
 ```bash
 npm run build
 ```
 
-构建产物输出到 `dist` 目录。
+产物目录：`dist/`
 
-## 📦 功能模块
+### 2) Nginx 部署（同域反向代理）
 
-### 🎯 核心模块
+> 使用该方案前，请将 `.env.production` 的 `VUE_APP_BASE_API` 设置为 `/api` 后重新构建。
 
-| 模块 | 功能描述 |
-|------|----------|
-| **用户管理** | 用户增删改查、状态管理、密码重置、在线状态、强制下线 |
-| **角色管理** | 角色配置、权限分配、数据权限设置 |
-| **权限管理** | 权限编码维护、状态控制 |
-| **资源管理** | URL/Method与权限映射 |
-| **菜单管理** | 菜单配置、权限关联、路由管理 |
-| **部门管理** | 组织架构、层级管理、部门权限 |
-| **字典管理** | 系统字典、配置管理 |
-| **日志管理** | 操作日志、登录日志、导出 |
-| **文件管理** | 文件上传、存储管理、访问控制 |
-| **通知公告** | 系统通知、公告发布、消息推送、定时发布 |
-| **IP白名单** | 访问控制、安全防护 |
-| **限流控制** | 接口访问频率限制、防刷机制 |
-| **数据脱敏** | 敏感数据保护、多种脱敏规则 |
+```nginx
+server {
+  listen 80;
+  server_name admin.yourblog.cn;
 
-### 🔒 安全特性
+  root /usr/share/nginx/html;
+  index index.html;
 
-#### 认证机制
-- **密码认证**: 传统用户名密码登录
-- **邮箱认证**: 邮箱验证码登录
-- **短信认证**: 手机短信验证码登录
-- **RSA加密**: 密码传输加密保护
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
 
-#### 权限控制
-- **权限模型**: 用户 -> 角色 -> 权限
-- **URL级权限**: 资源与权限映射控制接口访问
-- **菜单级权限**: 菜单与权限关联控制路由
-- **按钮级权限**: 细粒度操作权限控制
-- **数据级权限**: 行级数据访问控制
-
-#### 数据权限类型
-- **全部数据权限**: 无限制访问
-- **自定义数据权限**: 按指定部门范围
-- **部门数据权限**: 按所属部门
-- **部门及以下数据权限**: 按部门层级
-- **仅本人数据权限**: 仅访问本人数据
-
-## 🏛️ 系统架构
-
-### 包结构
-
-```
-src/
-├── api/               # 接口封装
-├── assets/            # 静态资源
-├── components/        # 通用组件
-├── directive/         # 权限指令
-├── mixins/            # 通用混入
-├── router/            # 路由配置
-├── store/             # Vuex 状态
-├── utils/             # 工具库
-├── views/             # 页面视图
-├── App.vue            # 根组件
-└── main.js            # 入口文件
+  location /api/ {
+    proxy_pass http://127.0.0.1:9090/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+}
 ```
 
-## 🖼️ 项目截图
+### 3) 部署验收清单
 
-![登录页](docs/screenshots/login.png)
-![注册页](docs/screenshots/register.png)
-![验证码](docs/screenshots/loging.png)
-![仪表盘](docs/screenshots/dashboard.png)
-![个人中心](docs/screenshots/profile.png)
-![用户管理](docs/screenshots/user.png)
-![角色管理](docs/screenshots/role.png)
-![菜单管理](docs/screenshots/menu.png)
-![权限管理](docs/screenshots/permission.png)
-![资源管理](docs/screenshots/resouce.png)
-![部门管理](docs/screenshots/dept.png)
-![字典管理](docs/screenshots/dictionary.png)
-![白名单管理](docs/screenshots/whitlist.png)
-![登录日志](docs/screenshots/login-log.png)
-![操作日志](docs/screenshots/operation.png)
-![通知公告](docs/screenshots/notice.png)
-![我的通知](docs/screenshots/notice-user.png)
+- 打开登录页正常。
+- 登录后能看到动态菜单。
+- 刷新二级页面不出现 404。
+- 长时间操作后 Token 可自动刷新。
 
-## 🤝 贡献指南
+## 🧩 三端联调
 
-我们欢迎社区贡献！请遵循以下步骤：
+```bash
+# 后端
+cd D:\Project\OtherProjects\blog
+mvn spring-boot:run
 
-1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/amazing-feature`)
-3. 提交更改 (`git commit -m 'Add some amazing feature'`)
-4. 推送到分支 (`git push origin feature/amazing-feature`)
-5. 提交 Pull Request
+# 后台
+cd D:\Project\FrontEndProjects\blog-admin
+npm run serve
+
+# 前台
+cd D:\Project\FrontEndProjects\blog-web
+npm run serve
+```
+
+默认端口：后端 `9090`，后台 `9099`，前台 `9088`。
+
+## 🖼️ 界面预览（待补充）
+
+| 页面 | 说明 | 图片 |
+| --- | --- | --- |
+| 登录页 | 账号登录/邮箱登录/滑块验证 | 待补充 |
+| 仪表盘 | 统计卡片与访问趋势 | 待补充 |
+| 用户管理 | 用户分页、状态、角色分配 | 待补充 |
+| 角色权限 | 角色绑定权限与菜单 | 待补充 |
+| 日志管理 | 登录日志、操作日志导出 | 待补充 |
+
+## ❓ 常见问题
+
+1. 登录后跳回登录页：优先检查后端是否可达、`VUE_APP_BASE_API` 是否正确。
+2. 401 刷新失败：检查后端 `security.login.cookie-path` 与前端请求路径是否一致。
+3. 页面刷新 404：确认 Nginx 已配置 `try_files $uri $uri/ /index.html`。
+
+## 🤝 贡献
+
+1. Fork 仓库
+2. 创建分支：`git checkout -b feature/xxx`
+3. 提交代码：`git commit -m "feat: xxx"`
+4. 发起 Pull Request
 
 ## 📄 许可证
 
-本项目基于 [MIT License](LICENSE.txt) 许可证开源。
-
-## 👥 团队
-
-- **南常** - 项目负责人 - [228389787@qq.com](mailto:228389787@qq.com)
-
-## 🙏 致谢
-
-感谢以下开源项目：
-
-- 🔥 [JetBrains](https://www.jetbrains.com/)- 世界最好的IDE
-- [Vue](https://v2.cn.vuejs.org/) - 基础框架
-- [Vuex](https://vuex.vuejs.org/zh/)- 存储管理
-- [Vue Router](https://router.vuejs.org/)- 路由管理
-- [Element UI](https://element.eleme.cn/#/zh-CN) - 组件库
-- [Axios](https://axios-http.com/) - HTTP请求库
-- [Echarts](https://echarts.apache.org/zh/index.html) - 图表库
-- [wangeditor](https://www.wangeditor.com/) - 富文本编辑器
-
-## 📞 支持
-
-如果您在使用过程中遇到问题，可以通过以下方式寻求帮助：
-
-- 📧 邮件: [228389787@qq.com](mailto:228389787@qq.com)
-- 🐛 Issue: [提交Issue](https://github.com/OOMEcho/aegis-vue/issues)
-- 📖 文档: [项目Wiki](https://github.com/OOMEcho/aegis-vue/wiki)
+本项目基于 [MIT License](LICENSE.txt) 开源。
 
 ---
 
 <div align="center">
 
-**如果这个项目对您有帮助，请给它一个 ⭐ Star！**
-
-Made with ❤️ by [南常](https://github.com/OOMEcho)
+Made with ❤️ by 南常
 
 </div>
