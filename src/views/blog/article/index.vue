@@ -43,6 +43,18 @@
 
       <el-table :data="tableData" v-loading="loading" border stripe>
         <el-table-column prop="title" label="标题" min-width="200" show-overflow-tooltip/>
+        <el-table-column label="封面" width="100" align="center">
+          <template slot-scope="scope">
+            <el-image
+              v-if="scope.row.coverImage"
+              style="width: 80px; height: 45px; border-radius: 4px; display: block; margin: 0 auto;"
+              :src="scope.row.coverImage"
+              :preview-src-list="[scope.row.coverImage]"
+              fit="cover">
+            </el-image>
+            <span v-else style="color: #909399; font-size: 12px;">无封面</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="categoryName" label="分类" width="100"/>
         <el-table-column label="标签" width="160">
           <template slot-scope="scope">
