@@ -96,6 +96,13 @@ export const PERMS = Object.freeze({
     update: 'blog:link:update:btn',
     delete: 'blog:link:delete:btn'
   },
+  // 开源项目管理
+  project: {
+    page: 'blog:project:page',
+    add: 'blog:project:add:btn',
+    update: 'blog:project:update:btn',
+    delete: 'blog:project:delete:btn'
+  },
   // 博客配置
   config: {
     page: 'blog:config:page',
