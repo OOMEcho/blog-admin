@@ -2,7 +2,7 @@
   <el-container class="layout">
     <el-aside class="layout-aside" :width="isCollapse ? '64px' : '190px'">
       <div class="logo">
-        <img src="@/assets/images/logo.png" alt="Aegis" class="logo-image"/>
+        <img src="@/assets/images/logo.png" alt="Aegis" class="logo-image" width="200" height="200" decoding="async"/>
         <span v-if="!isCollapse" class="logo-text">Aegis</span>
       </div>
       <aside-component :collapse="isCollapse"/>

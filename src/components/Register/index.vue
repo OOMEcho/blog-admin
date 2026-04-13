@@ -3,7 +3,7 @@
     <div class="register-shell">
       <section class="register-hero">
         <div class="brand">
-          <img class="brand-logo" src="@/assets/images/logo.png" alt="Aegis"/>
+          <img class="brand-logo" src="@/assets/images/logo.png" alt="Aegis" width="200" height="200" decoding="async"/>
           <span class="brand-name">Aegis</span>
         </div>
         <div class="hero-content">

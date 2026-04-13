@@ -46,10 +46,6 @@ const refreshTokenRequest = () => {
 instance.interceptors.request.use(config => {
   NProgress.start()
 
-  if (config.method === 'get') {
-    config.params = {...config.params, _t: Date.now()}
-  }
-
   const token = store.state.auth.accessToken
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`

@@ -153,6 +153,10 @@
                 v-if="form.coverImage"
                 :src="form.coverImage"
                 alt="封面预览"
+                width="220"
+                height="120"
+                loading="lazy"
+                decoding="async"
                 style="margin-top:10px;max-width:220px;max-height:120px;border:1px solid #ebeef5;border-radius:4px;object-fit:cover;"
               >
             </el-form-item>

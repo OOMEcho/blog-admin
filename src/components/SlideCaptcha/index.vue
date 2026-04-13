@@ -7,13 +7,16 @@
 
     <div class="captcha-main" v-if="captchaData && !loadError">
       <div class="background-container">
-        <img :src="captchaData.backgroundImage" class="background-image" alt="背景图"/>
+        <img :src="captchaData.backgroundImage" class="background-image" alt="背景图" width="320" height="180" decoding="async"/>
         <img
           :src="captchaData.sliderImage"
           class="slider-image"
           :class="{ sliding: isSliding }"
           :style="sliderImageStyle"
-          alt="滑块"/>
+          alt="滑块"
+          width="60"
+          height="60"
+          decoding="async"/>
       </div>
 
       <div class="slide-track">

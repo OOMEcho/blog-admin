@@ -2,7 +2,7 @@
   <div class="not-found">
     <div class="not-found-card">
       <div class="image-wrap">
-        <img class="main" :src="mainImage" alt="404"/>
+        <img class="main" :src="mainImage" alt="404" width="640" height="360" decoding="async"/>
       </div>
       <div class="content">
         <h1>页面不存在</h1>

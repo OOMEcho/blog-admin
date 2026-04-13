@@ -3,7 +3,7 @@
     <div class="login-shell">
       <section class="login-hero">
         <div class="brand">
-          <img class="brand-logo" src="@/assets/images/logo.png" alt="Blog"/>
+          <img class="brand-logo" src="@/assets/images/logo.png" alt="Blog" width="200" height="200" decoding="async"/>
            <span class="brand-name">Blog</span>
         </div>
         <div class="hero-content">
