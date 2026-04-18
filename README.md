@@ -199,15 +199,29 @@ npm run serve
 
 默认端口：后端 `9090`，后台 `9099`，前台 `9088`。
 
-## 🖼️ 界面预览（待补充）
+## 🖼️ 界面预览
 
-| 页面 | 说明 | 图片 |
-| --- | --- | --- |
-| 登录页 | 账号登录/邮箱登录/滑块验证 | 待补充 |
-| 仪表盘 | 统计卡片与访问趋势 | 待补充 |
-| 用户管理 | 用户分页、状态、角色分配 | 待补充 |
-| 角色权限 | 角色绑定权限与菜单 | 待补充 |
-| 日志管理 | 登录日志、操作日志导出 | 待补充 |
+![登录页](docs/screenshots/login.png)
+![注册页](docs/screenshots/register.png)
+![验证码](docs/screenshots/loging.png)
+![仪表盘](docs/screenshots/dashboard.png)
+![个人中心](docs/screenshots/profile.png)
+![文章管理](docs/screenshots/article.png)
+![分类管理](docs/screenshots/category.png)
+![标签管理](docs/screenshots/tag.png)
+![友链管理](docs/screenshots/link.png)
+![用户管理](docs/screenshots/user.png)
+![角色管理](docs/screenshots/role.png)
+![菜单管理](docs/screenshots/menu.png)
+![权限管理](docs/screenshots/permission.png)
+![资源管理](docs/screenshots/resouce.png)
+![部门管理](docs/screenshots/dept.png)
+![字典管理](docs/screenshots/dictionary.png)
+![白名单管理](docs/screenshots/whitlist.png)
+![登录日志](docs/screenshots/login-log.png)
+![操作日志](docs/screenshots/operation.png)
+![通知公告](docs/screenshots/notice.png)
+![我的通知](docs/screenshots/notice-user.png)
 
 ## ❓ 常见问题
 
@@ -230,6 +244,8 @@ npm run serve
 
 <div align="center">
 
-Made with ❤️ by 南常
+**如果这个项目对您有帮助，请给它一个 ⭐ Star！**
+
+Made with ❤️ by [OOMEcho](https://github.com/OOMEcho)
 
 </div>
