@@ -9,11 +9,13 @@
         <div class="hero-content">
           <h1 class="hero-title">欢迎回来</h1>
           <p class="hero-subtitle">简洁高效的个人博客管理后台</p>
-          <div class="hero-illustration">
-            <div class="panel-card"></div>
-            <div class="panel-card"></div>
-            <div class="panel-card"></div>
-          </div>
+        </div>
+        <div class="hero-characters">
+          <animated-characters
+            :focused-field="focusedField"
+            :password-length="passwordForm.password.length"
+            :is-password-visible="showPassword"
+            :error-signal="errorSignal"/>
         </div>
           <div class="hero-caption">专注写作，让内容更有价值</div>
       </section>
@@ -41,18 +43,29 @@
                 placeholder="请输入用户名"
                 prefix-icon="el-icon-user"
                 :disabled="showCaptcha"
+                @focus="focusedField = 'username'"
+                @blur="focusedField = null"
               />
             </el-form-item>
 
             <el-form-item prop="password">
               <el-input
                 v-model="passwordForm.password"
-                type="password"
+                :type="showPassword ? 'text' : 'password'"
                 placeholder="请输入密码"
                 prefix-icon="el-icon-lock"
                 :disabled="showCaptcha"
+                @focus="focusedField = 'password'"
+                @blur="focusedField = null"
                 @keyup.enter.native="handleLoginClick"
-              />
+              >
+                <i
+                  slot="suffix"
+                  class="el-input__icon el-icon-view password-toggle"
+                  :class="{ 'is-active': showPassword }"
+                  @click="showPassword = !showPassword"
+                />
+              </el-input>
             </el-form-item>
 
             <el-form-item>
@@ -81,6 +94,8 @@
                 placeholder="请输入邮箱"
                 prefix-icon="el-icon-message"
                 :disabled="showCaptcha"
+                @focus="focusedField = 'email'"
+                @blur="focusedField = null"
               />
             </el-form-item>
 
@@ -91,6 +106,8 @@
                   placeholder="请输入验证码"
                   prefix-icon="el-icon-key"
                   :disabled="showCaptcha"
+                  @focus="focusedField = 'code'"
+                  @blur="focusedField = null"
                   @keyup.enter.native="handleLoginClick"
                 />
                 <el-button
@@ -152,6 +169,7 @@
 
 <script>
 import SlideCaptcha from '@/components/SlideCaptcha/index.vue';
+import AnimatedCharacters from './AnimatedCharacters.vue';
 import {login} from '@/api/login';
 import {getPublicKey, sendEmailCode} from '@/api/profile';
 import {rsaEncrypt} from '@/utils/encrypt';
@@ -159,7 +177,8 @@ import {rsaEncrypt} from '@/utils/encrypt';
 export default {
   name: 'LoginPage',
   components: {
-    SlideCaptcha
+    SlideCaptcha,
+    AnimatedCharacters
   },
   data() {
     // 邮箱验证规则
@@ -212,7 +231,10 @@ export default {
       isLoggingIn: false,
       publicKey: '',
       countdown: 0,
-      timer: null
+      timer: null,
+      focusedField: null,
+      showPassword: false,
+      errorSignal: 0
     };
   },
   created() {
@@ -292,6 +314,7 @@ export default {
           // 表单验证通过，显示滑块验证码
           this.showCaptcha = true;
         } else {
+          this.errorSignal++;
           return false;
         }
       });
@@ -340,6 +363,7 @@ export default {
         }, 500);
 
       } catch (error) {
+        this.errorSignal++;
         // 刷新验证码
         this.$nextTick(() => {
           if (this.$refs.slideCaptcha) {
@@ -487,35 +511,15 @@ export default {
   margin: 0;
 }
 
-.hero-illustration {
-  margin-top: 16px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-}
-
-.panel-card {
-  height: 90px;
-  border-radius: 18px;
-  background: #ffffff;
-  box-shadow: 0 16px 30px rgba(58, 82, 160, 0.12);
-  position: relative;
-}
-
-.panel-card::after {
-  content: '';
-  position: absolute;
-  width: 50%;
-  height: 6px;
-  left: 16px;
-  top: 18px;
-  border-radius: 6px;
-  background: #d7e0ff;
-  box-shadow: 0 14px 0 #e7ecff, 0 28px 0 #f0f3ff;
+.hero-characters {
+  margin-top: auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  height: 360px;
 }
 
 .hero-caption {
-  margin-top: auto;
   color: #7c8aa5;
   font-size: 13px;
 }
@@ -547,6 +551,17 @@ export default {
 .send-code-btn {
   width: 120px;
   flex-shrink: 0;
+}
+
+.password-toggle {
+  cursor: pointer;
+  color: #c0c4cc;
+  transition: color 0.2s;
+}
+
+.password-toggle:hover,
+.password-toggle.is-active {
+  color: #4f70ff;
 }
 
 .register-link {
