@@ -61,12 +61,29 @@ instance.interceptors.request.use(config => {
 instance.interceptors.response.use(async response => {
   NProgress.done()
 
-  // 文件下载场景直接返回二进制
+  let payload = response.data
   if (response.config && response.config.responseType === 'blob') {
-    return response.data
+    if (response.status < 400 && /^attachment\b/i.test(response.headers?.['content-disposition'] || '')) return response.data
+    const contentType = response.data?.type || response.headers?.['content-type'] || ''
+    if (/\bjson\b/i.test(contentType)) {
+      try {
+        payload = JSON.parse(await response.data.text())
+      } catch (error) {
+        if (response.status < 400) return response.data
+        showError('服务不可用，请稍后重试')
+        return Promise.reject(new Error('服务不可用，请稍后重试'))
+      }
+      // JSON文件下载仍返回原始内容，统一错误响应则继续走令牌刷新和错误处理。
+      if (response.status < 400 && payload?.code === undefined) return response.data
+    } else {
+      if (response.status >= 400) {
+        showError('服务不可用，请稍后重试')
+        return Promise.reject(new Error('服务不可用，请稍后重试'))
+      }
+      return response.data
+    }
   }
 
-  const payload = response.data
   if (!payload || typeof payload !== 'object') {
     if (response.status >= 400) {
       showError('服务不可用，请稍后重试')

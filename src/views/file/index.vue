@@ -103,11 +103,19 @@
         <el-table-column prop="contentType" label="文件类型" min-width="130"/>
         <el-table-column prop="fileSize" label="大小(bytes)" width="120"/>
         <el-table-column prop="platform" label="平台" width="120"/>
+        <el-table-column label="访问类型" width="100">
+          <template slot-scope="scope">
+            <el-tag :type="isPublicFile(scope.row) ? 'success' : 'info'" size="small">
+              {{ isPublicFile(scope.row) ? '公开' : '私有' }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="uploadTime" label="上传时间" min-width="160"/>
         <el-table-column label="操作" min-width="260" fixed="right">
           <template slot-scope="scope">
             <div class="action-buttons">
-              <el-tooltip content="预览" placement="top" popper-class="action-tooltip">
+              <span v-if="!isPublicFile(scope.row)">请到所属业务管理</span>
+              <el-tooltip v-if="isPublicFile(scope.row)" content="预览" placement="top" popper-class="action-tooltip">
                 <el-button
                   type="text"
                   size="mini"
@@ -123,7 +131,7 @@
                   class="action-icon is-neutral"
                   @click="copyPath(scope.row.filePath)"/>
               </el-tooltip>
-              <el-tooltip v-perm="PERMS.file.tempDownload" content="临时下载" placement="top" popper-class="action-tooltip">
+              <el-tooltip v-if="isPublicFile(scope.row)" v-perm="PERMS.file.tempDownload" content="临时下载" placement="top" popper-class="action-tooltip">
                 <el-button
                   type="text"
                   size="mini"
@@ -131,7 +139,7 @@
                   class="action-icon is-neutral"
                   @click="handleTempDownload(scope.row)"/>
               </el-tooltip>
-              <el-tooltip v-perm="PERMS.file.download" content="下载" placement="top" popper-class="action-tooltip">
+              <el-tooltip v-if="isPublicFile(scope.row)" v-perm="PERMS.file.download" content="下载" placement="top" popper-class="action-tooltip">
                 <el-button
                   type="text"
                   size="mini"
@@ -139,7 +147,7 @@
                   class="action-icon is-neutral"
                   @click="handleDownload(scope.row)"/>
               </el-tooltip>
-              <el-dropdown v-perm="PERMS.file.delete" trigger="click" popper-class="action-dropdown">
+              <el-dropdown v-if="isPublicFile(scope.row)" v-perm="PERMS.file.delete" trigger="click" popper-class="action-dropdown">
                 <span class="action-dropdown-trigger">
                   <el-tooltip content="更多操作" placement="top" popper-class="action-tooltip">
                     <el-button type="text" size="mini" icon="el-icon-more" class="action-icon is-neutral"/>
@@ -216,12 +224,17 @@ export default {
         platform: ''
       }
     },
+    isPublicFile(record) {
+      return record?.accessType === 'PUBLIC'
+    },
     normalizeRecord(record) {
       if (!record) {
         return record
       }
       const result = {...record}
-      if (!result.accessUrl && result.id) {
+      if (!this.isPublicFile(result)) {
+        result.accessUrl = null
+      } else if (!result.accessUrl && result.id) {
         result.accessUrl = this.buildPreviewUrl(result.id)
       }
       return result
@@ -405,6 +418,10 @@ export default {
       this.failedUploads = []
     },
     async handleTempDownload(row) {
+      if (!this.isPublicFile(row)) {
+        Message.warning('私有文件请到所属业务管理')
+        return
+      }
       try {
         const data = await getTemporaryDownloadUrl(row.filePath)
         const url = data?.downloadUrl || data?.url || Object.values(data || {})[0]
@@ -435,6 +452,10 @@ export default {
       }
     },
     async handleDownload(row) {
+      if (!this.isPublicFile(row)) {
+        Message.warning('私有文件请到所属业务管理')
+        return
+      }
       try {
         const blob = await downloadFile(row.filePath)
         this.downloadBlob(blob, row.originalFileName || row.fileName || 'download')
@@ -443,6 +464,10 @@ export default {
       }
     },
     handlePreview(row) {
+      if (!this.isPublicFile(row)) {
+        Message.warning('私有文件请到所属业务管理')
+        return
+      }
       if (!row?.id) {
         Message.warning('文件信息不完整')
         return
@@ -486,6 +511,10 @@ export default {
       return url
     },
     async handleDelete(row) {
+      if (!this.isPublicFile(row)) {
+        Message.warning('私有文件请到所属业务管理')
+        return
+      }
       this.$confirm(`确认删除文件 ${row.fileName} 吗？`, '提示', {type: 'warning'})
         .then(async () => {
           await deleteFile(row.filePath)

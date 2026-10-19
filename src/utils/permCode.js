@@ -103,6 +103,16 @@ export const PERMS = Object.freeze({
     update: 'blog:project:update:btn',
     delete: 'blog:project:delete:btn'
   },
+  // 摄影管理
+  photography: {
+    page: 'blog:photography:page',
+    add: 'blog:photography:add:btn',
+    update: 'blog:photography:update:btn',
+    upload: 'blog:photography:upload:btn',
+    preview: 'blog:photography:preview:btn',
+    publish: 'blog:photography:publish:btn',
+    unpublish: 'blog:photography:unpublish:btn'
+  },
   // 博客配置
   config: {
     page: 'blog:config:page',
