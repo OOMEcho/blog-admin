@@ -1,72 +1,110 @@
 <template>
   <div class="page-container photography-admin">
     <el-card v-if="!album">
-      <div slot="header" class="album-toolbar"><span>摄影管理</span><el-button v-perm="PERMS.photography.add" type="primary" size="small" @click="newAlbum">新建相册</el-button></div>
+      <div slot="header" class="card-header">摄影管理</div>
+      <div class="table-toolbar album-list-toolbar">
+        <el-button v-perm="PERMS.photography.add" type="primary" size="small" icon="el-icon-plus" aria-label="新建相册" @click="newAlbum">新建相册</el-button>
+        <span class="muted">按旅行或拍摄主题整理照片，保存草稿后发布。</span>
+      </div>
       <el-alert v-if="listError" :title="listError" type="error" :closable="false" />
-      <el-table v-loading="loading" :data="albums" border>
-        <el-table-column prop="title" label="相册" min-width="180" />
+      <el-table v-loading="loading" :data="albums" border stripe>
+        <el-table-column prop="title" label="相册" min-width="220">
+          <template slot-scope="scope"><div class="album-list-title">{{ scope.row.title }}</div><p v-if="scope.row.description" class="album-list-description">{{ scope.row.description }}</p></template>
+        </el-table-column>
         <el-table-column prop="date" label="拍摄日期" width="120" />
-        <el-table-column prop="photoCount" label="照片数" width="90" />
-        <el-table-column label="状态" min-width="170"><template slot-scope="scope"><el-tag :type="scope.row.status === 'PUBLISHED' ? 'success' : 'info'">{{ statusText(scope.row.status) }}</el-tag> <span v-if="scope.row.hasUnpublishedChanges" class="muted">有未发布内容</span></template></el-table-column>
-        <el-table-column label="操作" width="100"><template slot-scope="scope"><el-button v-perm="[PERMS.photography.update, PERMS.photography.preview, PERMS.photography.upload, PERMS.photography.publish, PERMS.photography.unpublish]" type="text" @click="openAlbum(scope.row.id)">{{ canUpdate ? '编辑相册' : '查看相册' }}</el-button></template></el-table-column>
+        <el-table-column prop="photoCount" label="照片数" width="90" align="center" />
+        <el-table-column label="状态" min-width="170"><template slot-scope="scope"><el-tag size="small" :type="scope.row.status === 'PUBLISHED' ? 'success' : 'info'">{{ statusText(scope.row.status) }}</el-tag> <span v-if="scope.row.hasUnpublishedChanges" class="muted">有未发布内容</span></template></el-table-column>
+        <el-table-column label="操作" width="100" fixed="right">
+          <template slot-scope="scope">
+            <div class="action-buttons">
+              <el-tooltip :content="canUpdate ? '编辑相册' : '查看相册'" placement="top" popper-class="action-tooltip">
+                <el-button v-perm="[PERMS.photography.update, PERMS.photography.preview, PERMS.photography.upload, PERMS.photography.publish, PERMS.photography.unpublish]" type="text" size="mini" :icon="canUpdate ? 'el-icon-edit' : 'el-icon-view'" class="action-icon is-primary" :aria-label="canUpdate ? '编辑相册' : '查看相册'" @click="openAlbum(scope.row.id)" />
+              </el-tooltip>
+            </div>
+          </template>
+        </el-table-column>
       </el-table>
       <el-pagination :current-page="page" :page-size="12" :total="total" layout="total, prev, pager, next" @current-change="changePage" />
-      <el-button v-if="listError" size="small" @click="fetchList">重新加载</el-button>
+      <el-button v-if="listError" size="small" icon="el-icon-refresh" @click="fetchList">重新加载</el-button>
     </el-card>
 
-    <el-card v-else>
-      <div slot="header" class="album-toolbar"><div><el-button type="text" :disabled="busy" @click="back">← 全部相册</el-button> <strong>{{ album.title }}</strong></div><el-tag>{{ statusText(album.status) }}</el-tag></div>
-      <el-alert title="编辑内容先保存为草稿，点击发布更新后访客才能看到。原图下载保留上传文件中的拍摄信息。" type="info" :closable="false" show-icon />
-      <el-form @submit.native.prevent label-width="90px" class="album-form" :disabled="busy || !canUpdate">
-        <el-form-item label="相册标题"><el-input v-model="content.title" maxlength="120" show-word-limit /></el-form-item>
-        <el-form-item label="拍摄日期"><el-date-picker v-model="content.date" type="date" value-format="yyyy-MM-dd" placeholder="选择日期" /></el-form-item>
-        <el-form-item label="相册介绍"><el-input v-model="content.description" type="textarea" :rows="3" maxlength="4000" show-word-limit /></el-form-item>
-      </el-form>
-      <div class="album-actions">
-        <el-button v-perm="PERMS.photography.update" :disabled="busy" :loading="saving" @click="save">保存草稿</el-button>
-        <el-button v-perm="PERMS.photography.preview" :disabled="busy" @click="preview">预览草稿</el-button>
-        <el-button v-perm="PERMS.photography.publish" type="primary" :disabled="busy || !content.photos.length" @click="publish">{{ album.status === 'PUBLISHED' ? '发布更新' : '发布相册' }}</el-button>
-        <el-button v-if="album.status === 'PUBLISHED'" v-perm="PERMS.photography.unpublish" type="warning" :disabled="busy" @click="unpublish">下架相册</el-button>
-        <el-button :disabled="busy" @click="reload">重新加载</el-button>
-      </div>
-      <section v-perm="PERMS.photography.upload" class="photo-upload">
-        <label class="upload-label">批量上传 JPEG <input ref="picker" type="file" accept="image/jpeg,.jpg,.jpeg" multiple :disabled="busy" @change="selectFiles"></label>
-        <span class="muted">每张不超过 50MB；有未保存的修改时先保存，再依次上传。</span>
-      </section>
-      <div v-if="queue.length" class="upload-queue" aria-live="polite">
-        <div v-for="item in queue" :key="item.key" class="queue-row">
-          <span class="queue-name">{{ item.file.name }}</span><el-progress :percentage="item.progress" :status="item.status === 'done' ? 'success' : item.status === 'failed' ? 'exception' : undefined" />
-          <span>{{ item.message }}</span><el-button v-if="item.status === 'failed'" v-perm="PERMS.photography.upload" type="text" :disabled="busy" @click="retry(item)">重试</el-button>
+    <div v-else class="album-editor">
+      <div class="editor-commandbar">
+        <div class="editor-heading">
+          <el-button type="text" icon="el-icon-back" aria-label="全部相册" :disabled="busy" @click="back">全部相册</el-button>
+          <div class="editor-title"><strong :title="album.title">{{ album.title }}</strong><span class="muted">{{ dirty ? '有未保存修改' : '草稿已保存' }} · {{ content.photos.length }} 张照片</span></div>
+          <el-tag size="small" :type="album.status === 'PUBLISHED' ? 'success' : 'info'">{{ statusText(album.status) }}</el-tag>
         </div>
-        <el-button v-if="!uploading" type="text" @click="clearQueue">清除已完成记录</el-button>
+        <div class="album-actions">
+          <el-button v-perm="PERMS.photography.update" size="small" icon="el-icon-document-checked" aria-label="保存草稿" :disabled="busy" :loading="saving" @click="save">保存草稿</el-button>
+          <el-button v-perm="PERMS.photography.preview" size="small" icon="el-icon-view" aria-label="预览草稿" :disabled="busy" @click="preview">预览草稿</el-button>
+          <el-button v-perm="PERMS.photography.publish" type="primary" size="small" :aria-label="album.status === 'PUBLISHED' ? '发布更新' : '发布相册'" icon="el-icon-upload2" :disabled="busy || !content.photos.length" @click="publish">{{ album.status === 'PUBLISHED' ? '发布更新' : '发布相册' }}</el-button>
+          <el-button v-if="album.status === 'PUBLISHED'" v-perm="PERMS.photography.unpublish" type="warning" plain size="small" icon="el-icon-switch-button" aria-label="下架相册" :disabled="busy" @click="unpublish">下架相册</el-button>
+          <el-tooltip content="重新加载" placement="top"><el-button size="small" icon="el-icon-refresh" aria-label="重新加载" :disabled="busy" @click="reload" /></el-tooltip>
+        </div>
       </div>
-      <p v-if="!content.photos.length" class="empty-photos">先上传照片，再选择封面和发布相册。</p>
-      <div class="edit-photo-grid">
-        <article v-for="(entry, i) in content.photos" :key="entry.photoId" class="edit-photo">
-          <div class="edit-photo-image"><img v-if="thumbnails[entry.photoId]" :src="thumbnails[entry.photoId]" :alt="entry.caption || '照片预览'"><el-button v-else-if="canPreview" size="mini" :disabled="thumbnailLoading[entry.photoId]" @click="loadThumbnail(entry.photoId)">{{ thumbnailLoading[entry.photoId] ? '加载中…' : '加载预览' }}</el-button></div>
-          <el-tag v-if="String(content.coverPhotoId) === String(entry.photoId)" size="mini" type="success">相册封面</el-tag>
-          <p class="photo-filename">{{ photoInfo(entry.photoId).originalName }}</p>
-          <p class="muted photo-exif">{{ exif(photoInfo(entry.photoId)) }}</p>
-          <el-input v-model="entry.caption" :disabled="busy || !canUpdate" type="textarea" :rows="2" maxlength="1000" placeholder="这张照片的故事（可选）" />
-          <el-input v-model="entry.takenAt" :disabled="busy || !canUpdate" maxlength="32" placeholder="拍摄时间（可选）" size="small" class="photo-date" />
-          <div v-perm="PERMS.photography.update" class="photo-controls">
-            <el-button size="mini" :disabled="busy" @click="content.coverPhotoId = entry.photoId">设为封面</el-button>
-            <el-button size="mini" :disabled="busy || i === 0" aria-label="向前移动" @click="move(i, -1)">↑</el-button>
-            <el-button size="mini" :disabled="busy || i === content.photos.length - 1" aria-label="向后移动" @click="move(i, 1)">↓</el-button>
-            <el-button type="text" :disabled="busy" @click="remove(i)">移出</el-button>
+
+      <el-card class="album-details">
+        <div slot="header" class="card-header">相册信息</div>
+        <el-form @submit.native.prevent label-width="90px" size="small" class="album-form" :disabled="busy || !canUpdate">
+          <el-form-item label="相册标题"><el-input v-model="content.title" maxlength="120" show-word-limit /></el-form-item>
+          <el-form-item label="拍摄日期"><el-date-picker v-model="content.date" type="date" value-format="yyyy-MM-dd" placeholder="选择日期" /></el-form-item>
+          <el-form-item label="相册介绍"><el-input v-model="content.description" type="textarea" :rows="3" maxlength="4000" show-word-limit /></el-form-item>
+        </el-form>
+      </el-card>
+
+      <el-card class="album-photos">
+        <div slot="header" class="card-header photo-section-heading"><span>照片管理 <span class="section-count">{{ content.photos.length }}</span></span><span class="muted">调整顺序、选择封面，并为照片补充说明</span></div>
+        <section v-perm="PERMS.photography.upload" class="photo-upload">
+          <div class="upload-copy"><i class="el-icon-upload" aria-hidden="true" /><div><strong>批量上传照片</strong><p>支持 JPEG，每张不超过 50MB。未保存的修改会先保存为草稿。</p></div></div>
+          <el-button type="primary" plain size="small" icon="el-icon-folder-opened" aria-label="选择照片" :disabled="busy" @click="$refs.picker.click()">选择照片</el-button>
+          <input ref="picker" class="photo-picker" type="file" accept="image/jpeg,.jpg,.jpeg" multiple :disabled="busy" aria-label="选择 JPEG 照片" @change="selectFiles">
+        </section>
+        <p class="photo-publish-hint"><i class="el-icon-info" aria-hidden="true" /> 修改先保存为草稿，发布后才会展示给访客。原图下载保留上传文件中的拍摄信息。</p>
+        <div v-if="queue.length" class="upload-queue" aria-live="polite">
+          <div class="queue-heading"><strong>上传进度 <span class="muted">共 {{ queue.length }} 张</span></strong><el-button v-if="!uploading" type="text" size="small" @click="clearQueue">清除已完成记录</el-button></div>
+          <div class="queue-items">
+            <div v-for="item in queue" :key="item.key" class="queue-row">
+              <span class="queue-name" :title="item.file.name">{{ item.file.name }}</span>
+              <el-progress :percentage="item.progress" :color="item.status === 'failed' || item.status === 'done' ? undefined : 'var(--brand-primary)'" :status="item.status === 'done' ? 'success' : item.status === 'failed' ? 'exception' : undefined" />
+              <span class="queue-message">{{ item.message }}</span><el-button v-if="item.status === 'failed'" v-perm="PERMS.photography.upload" type="text" size="small" :disabled="busy" @click="retry(item)">重试</el-button>
+            </div>
           </div>
-        </article>
-      </div>
-    </el-card>
+        </div>
+        <el-empty v-if="!content.photos.length" :image-size="70" description="上传照片后，可选择封面并发布相册" />
+        <div class="edit-photo-grid">
+          <article v-for="(entry, i) in content.photos" :key="entry.photoId" class="edit-photo">
+            <div class="photo-card-heading"><span class="photo-sequence">第 {{ i + 1 }} 张</span><el-tag v-if="String(content.coverPhotoId) === String(entry.photoId)" size="mini" type="success">相册封面</el-tag></div>
+            <div class="edit-photo-image"><img v-if="thumbnails[entry.photoId]" :src="thumbnails[entry.photoId]" :alt="entry.caption || '照片预览'"><el-button v-else-if="canPreview" size="mini" icon="el-icon-picture-outline" :disabled="thumbnailLoading[entry.photoId]" @click="loadThumbnail(entry.photoId)">{{ thumbnailLoading[entry.photoId] ? '加载中…' : '加载预览' }}</el-button><i v-else class="el-icon-picture-outline" aria-hidden="true" /></div>
+            <div class="photo-card-body">
+              <p class="photo-filename" :title="photoInfo(entry.photoId).originalName">{{ photoInfo(entry.photoId).originalName }}</p>
+              <p class="muted photo-exif">{{ exif(photoInfo(entry.photoId)) }}</p>
+              <label class="photo-field-label" :for="`caption-${entry.photoId}`">照片说明</label>
+              <el-input :id="`caption-${entry.photoId}`" v-model="entry.caption" :disabled="busy || !canUpdate" type="textarea" :rows="2" maxlength="1000" placeholder="记录这张照片的故事（可选）" />
+              <label class="photo-field-label" :for="`taken-at-${entry.photoId}`">拍摄时间</label>
+              <el-input :id="`taken-at-${entry.photoId}`" v-model="entry.takenAt" :disabled="busy || !canUpdate" maxlength="32" placeholder="拍摄时间（可选）" size="small" />
+            </div>
+            <div v-perm="PERMS.photography.update" class="photo-controls">
+              <el-button size="mini" icon="el-icon-star-off" aria-label="设为封面" :disabled="busy" @click="content.coverPhotoId = entry.photoId">设为封面</el-button>
+              <div class="action-buttons">
+                <el-tooltip content="向前移动" placement="top" popper-class="action-tooltip"><el-button type="text" size="mini" icon="el-icon-top" class="action-icon is-neutral" :disabled="busy || i === 0" aria-label="向前移动" @click="move(i, -1)" /></el-tooltip>
+                <el-tooltip content="向后移动" placement="top" popper-class="action-tooltip"><el-button type="text" size="mini" icon="el-icon-bottom" class="action-icon is-neutral" :disabled="busy || i === content.photos.length - 1" aria-label="向后移动" @click="move(i, 1)" /></el-tooltip>
+                <el-tooltip content="从相册移出" placement="top" popper-class="action-tooltip"><el-button type="text" size="mini" icon="el-icon-delete" class="action-icon is-danger" :disabled="busy" aria-label="移出照片" @click="remove(i)" /></el-tooltip>
+              </div>
+            </div>
+          </article>
+        </div>
+      </el-card>
+    </div>
 
     <el-dialog title="相册草稿预览" :visible.sync="previewVisible" width="92%" top="4vh" append-to-body>
-      <div class="draft-preview"><h1>{{ content.title }}</h1><p>{{ content.date }}</p><p class="preview-description">{{ content.description }}</p>
+      <div class="draft-preview"><h1>{{ content.title }}</h1><p class="muted">{{ content.date }}</p><p class="preview-description">{{ content.description }}</p>
         <div class="preview-grid"><figure v-for="(entry, i) in content.photos" :key="entry.photoId"><button class="preview-photo" :aria-label="`打开照片 ${i + 1}`" @click="viewPhoto(i)"><img v-if="thumbnails[entry.photoId]" :src="thumbnails[entry.photoId]" :alt="entry.caption || '摄影作品'" :width="photoInfo(entry.photoId).width" :height="photoInfo(entry.photoId).height"><span v-else>点击查看照片</span></button><figcaption>{{ entry.caption }}</figcaption></figure></div>
       </div>
     </el-dialog>
     <el-dialog title="照片预览" :visible.sync="viewerVisible" fullscreen append-to-body @closed="releaseDisplay">
       <div v-loading="viewerLoading" class="admin-viewer" @touchstart="viewerTouchStart" @touchend="viewerTouchEnd">
-        <div class="viewer-nav"><el-button :disabled="viewerIndex <= 0 || viewerLoading" @click="viewPhoto(viewerIndex - 1)">上一张</el-button><span>{{ viewerIndex + 1 }} / {{ content.photos.length }}</span><el-button :disabled="viewerIndex + 1 >= content.photos.length || viewerLoading" @click="viewPhoto(viewerIndex + 1)">下一张</el-button><el-button :disabled="viewerLoading" @click="downloadOriginal">下载原图</el-button></div>
+        <div class="viewer-nav"><el-button size="small" icon="el-icon-arrow-left" aria-label="上一张" :disabled="viewerIndex <= 0 || viewerLoading" @click="viewPhoto(viewerIndex - 1)">上一张</el-button><span>{{ viewerIndex + 1 }} / {{ content.photos.length }}</span><el-button size="small" aria-label="下一张" :disabled="viewerIndex + 1 >= content.photos.length || viewerLoading" @click="viewPhoto(viewerIndex + 1)">下一张 <i class="el-icon-arrow-right" /></el-button><el-button size="small" icon="el-icon-download" aria-label="下载原图" :disabled="viewerLoading" @click="downloadOriginal">下载原图</el-button></div>
         <p v-if="viewerError" role="alert">{{ viewerError }}</p><img v-if="displayUrl" :src="displayUrl" :alt="viewerEntry.caption || '照片预览'" /><p>{{ viewerEntry.caption }}</p><p class="muted">{{ exif(photoInfo(viewerEntry.photoId)) }}</p>
       </div>
     </el-dialog>
@@ -232,6 +270,91 @@ export default {
 </script>
 
 <style scoped>
-.album-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }.album-form { max-width: 860px; margin-top: 24px; }.album-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0; }.album-actions .el-button { margin-left: 0; }.muted { color: #84909b; font-size: 12px; }.photo-upload { padding: 20px 0; border-top: 1px solid #e8edef; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }.upload-label { border: 1px solid #409eff; color: #2879cc; border-radius: 4px; padding: 10px 16px; cursor: pointer; }.upload-label input { display: block; max-width: 260px; margin-top: 8px; }.queue-row { display: grid; grid-template-columns: minmax(120px, 1fr) 160px minmax(120px, 1fr) 50px; gap: 16px; align-items: center; padding: 10px 0; font-size: 12px; }.queue-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.edit-photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-top: 20px; }.edit-photo { border: 1px solid #e5eaef; padding: 12px; border-radius: 4px; }.edit-photo-image { height: 200px; background: #f1f4f6; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }.edit-photo-image img { width: 100%; height: 100%; object-fit: contain; }.photo-filename { font-size: 12px; overflow-wrap: anywhere; margin: 8px 0; }.photo-exif { min-height: 30px; line-height: 1.6; margin: 8px 0; }.photo-date { margin-top: 10px; }.photo-controls { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }.photo-controls .el-button { margin-left: 0; }.empty-photos { text-align: center; padding: 32px; color: #84909b; }.el-pagination { margin-top: 20px; text-align: right; }.draft-preview { max-width: 1100px; margin: auto; }.draft-preview h1 { font-weight: 500; }.preview-description { white-space: pre-wrap; line-height: 1.9; margin: 20px 0; }.preview-grid { columns: 3; column-gap: 20px; }.preview-grid figure { break-inside: avoid; margin: 0 0 20px; }.preview-photo { padding: 0; border: 0; width: 100%; background: #f0f4f6; cursor: zoom-in; }.preview-photo img { width: 100%; height: auto; display: block; }.preview-grid figcaption { padding-top: 8px; white-space: pre-wrap; }.admin-viewer { text-align: center; min-height: 70vh; }.admin-viewer > img { display: block; max-width: 100%; height: 70vh; object-fit: contain; margin: 20px auto; }.viewer-nav { display: flex; gap: 12px; justify-content: center; align-items: center; }.admin-viewer p { white-space: pre-wrap; line-height: 1.8; }
-@media (max-width: 640px) { .queue-row { grid-template-columns: 1fr 80px; gap: 8px; }.preview-grid { columns: 1; }.viewer-nav { flex-wrap: wrap; }.album-toolbar { align-items: flex-start; } }
+.album-list-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 16px; }
+.album-list-title { font-weight: 500; color: var(--text-primary); overflow-wrap: anywhere; }
+.album-list-description { margin: 5px 0 0; color: var(--text-muted); font-size: 12px; line-height: 1.6; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
+.muted { color: var(--text-muted); font-size: 12px; }
+.editor-commandbar { position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; padding: 14px 18px; margin-bottom: 16px; border: 1px solid var(--brand-border); border-radius: var(--radius-medium); background: var(--surface); box-shadow: 0 4px 16px rgba(32, 45, 77, .06); }
+.editor-heading { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.editor-heading > .el-button { flex-shrink: 0; color: var(--brand-primary); }
+.editor-title { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.editor-title strong { max-width: 320px; font-size: 15px; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+.editor-heading > .el-tag { flex-shrink: 0; }
+.album-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.album-actions .el-button { margin-left: 0; }
+.album-details { margin-bottom: 16px; }
+.album-form { max-width: 860px; padding: 4px 0; }
+.album-form .el-form-item:last-child { margin-bottom: 0; }
+.photo-section-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.photo-section-heading .muted { font-weight: 400; }
+.section-count { margin-left: 6px; color: var(--brand-primary); font-size: 12px; }
+.photo-upload { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; padding: 18px 20px; border: 1px solid var(--brand-border); border-radius: var(--radius-medium); background: var(--surface-soft); }
+.upload-copy { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.upload-copy > i { color: var(--brand-primary); font-size: 30px; }
+.upload-copy strong { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+.upload-copy p { margin: 6px 0 0; font-size: 12px; line-height: 1.7; color: var(--text-secondary); }
+.photo-upload > .el-button { color: var(--brand-primary); border-color: var(--brand-border); background: var(--brand-soft); }
+.photo-upload > .el-button:not(.is-disabled):hover { color: var(--surface); border-color: var(--brand-primary); background: var(--brand-primary); }
+.photo-upload > .el-button.is-disabled { opacity: .6; }
+.photo-picker { display: none; }
+.photo-publish-hint { margin: 12px 0 20px; color: var(--text-muted); font-size: 12px; line-height: 1.8; }
+.photo-publish-hint > i { margin-right: 4px; }
+.upload-queue { padding: 0 16px; border: 1px solid var(--brand-border); border-radius: var(--radius-medium); margin-bottom: 20px; }
+.queue-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; min-height: 46px; border-bottom: 1px solid var(--brand-border); }
+.queue-heading strong { font-size: 13px; font-weight: 500; }
+.queue-heading .muted { margin-left: 8px; }
+.queue-items { max-height: 224px; overflow-y: auto; }
+.queue-row { display: grid; grid-template-columns: minmax(100px, 1fr) minmax(110px, 160px) minmax(100px, 1fr) 40px; gap: 16px; align-items: center; min-height: 46px; font-size: 12px; }
+.queue-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.queue-message { color: var(--text-secondary); overflow-wrap: anywhere; }
+.edit-photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+.edit-photo { min-width: 0; border: 1px solid var(--brand-border); border-radius: var(--radius-medium); overflow: hidden; background: var(--surface); }
+.photo-card-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 40px; padding: 8px 14px; background: var(--surface-soft); }
+.photo-sequence { font-size: 12px; color: var(--text-secondary); }
+.edit-photo-image { height: 200px; background: var(--surface-muted); display: flex; align-items: center; justify-content: center; }
+.edit-photo-image img { width: 100%; height: 100%; object-fit: contain; }
+.edit-photo-image > i { color: var(--text-muted); font-size: 32px; }
+.photo-card-body { padding: 14px; }
+.photo-filename { margin: 0; color: var(--text-primary); font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.photo-exif { min-height: 30px; line-height: 1.6; margin: 6px 0 12px; overflow-wrap: anywhere; }
+.photo-field-label { display: block; margin: 12px 0 6px; color: var(--text-secondary); font-size: 12px; }
+.photo-controls { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--brand-border); }
+.photo-controls .el-button { margin-left: 0; }
+.el-pagination { margin-top: 16px; text-align: right; }
+.draft-preview { max-width: 1100px; margin: auto; color: var(--text-primary); }
+.draft-preview h1 { font-size: 24px; font-weight: 600; line-height: 1.5; overflow-wrap: anywhere; }
+.preview-description { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.9; margin: 20px 0; color: var(--text-secondary); }
+.preview-grid { columns: 3; column-gap: 20px; }
+.preview-grid figure { break-inside: avoid; margin: 0 0 20px; }
+.preview-photo { padding: 0; border: 0; border-radius: 6px; overflow: hidden; width: 100%; background: var(--surface-muted); cursor: zoom-in; }
+.preview-photo img { width: 100%; height: auto; display: block; }
+.preview-photo > span { display: block; padding: 24px; color: var(--brand-primary); }
+.preview-grid figcaption { padding-top: 8px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-secondary); }
+.admin-viewer { text-align: center; min-height: 70vh; }
+.admin-viewer > img { display: block; max-width: 100%; height: 70vh; object-fit: contain; margin: 20px auto; }
+.viewer-nav { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: center; }
+.viewer-nav .el-button { margin-left: 0; }
+.admin-viewer p { white-space: pre-wrap; line-height: 1.8; }
+.photography-admin :focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 3px; }
+@media (max-width: 800px) { .preview-grid { columns: 2; } }
+@media (max-width: 640px) {
+  .editor-commandbar { padding: 12px; gap: 12px; }
+  .editor-heading { width: 100%; gap: 10px; }
+  .editor-title { flex: 1; }
+  .editor-title strong { max-width: 100%; font-size: 14px; }
+  .album-actions { gap: 6px; }
+  .photo-upload { padding: 16px; }
+  .album-form ::v-deep .el-form-item__label { float: none; display: block; width: auto !important; text-align: left; padding-bottom: 6px; }
+  .album-form ::v-deep .el-form-item__content { margin-left: 0 !important; }
+  .album-form ::v-deep .el-date-editor { width: 100%; }
+  .el-pagination { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; white-space: normal; }
+  .upload-copy { align-items: flex-start; }
+  .queue-row { grid-template-columns: minmax(0, 1fr) 40px; gap: 6px 12px; padding: 10px 0; }
+  .queue-name { grid-column: 1 / -1; }
+  .queue-row .el-progress { grid-column: 1; }
+  .queue-message { grid-column: 1; }
+  .queue-row > .el-button { grid-column: 2; grid-row: span 2; }
+  .edit-photo-grid { grid-template-columns: minmax(0, 1fr); }
+  .preview-grid { columns: 1; }
+}
 </style>
